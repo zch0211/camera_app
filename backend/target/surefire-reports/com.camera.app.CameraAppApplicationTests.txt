@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.camera.app.CameraAppApplicationTests
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.299 s -- in com.camera.app.CameraAppApplicationTests

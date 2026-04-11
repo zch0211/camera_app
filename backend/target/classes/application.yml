@@ -1,0 +1,45 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: camera-app
+  profiles:
+    active: local
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/camera_app?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: camera
+    password: camera123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+# JWT: secret must be Base64-encoded and decode to >= 32 bytes (256 bits)
+# Override in production via environment variable: APP_JWT_SECRET
+app:
+  jwt:
+    secret: Y2FtZXJhQXBwU2VjcmV0S2V5Rm9ySldUU2lnbmluZ0RlZmF1bHQyMDI0
+    expiration-ms: 86400000  # 24 hours
+
+logging:
+  level:
+    com.camera.app: INFO

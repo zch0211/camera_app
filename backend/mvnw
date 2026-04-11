@@ -1,0 +1,62 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Apache Maven Wrapper startup script, version 3.3.2
+#
+# Required ENV vars:
+#   JAVA_HOME - location of a JDK home dir (optional if java is on PATH)
+#
+# Optional ENV vars:
+#   MAVEN_OPTS        - parameters passed to the Java VM running Maven
+# ----------------------------------------------------------------------------
+
+set -e
+
+# ---- Resolve script location -----------------------------------------------
+PRG="$0"
+while [ -h "$PRG" ]; do
+  ls=$(ls -ld "$PRG")
+  link=$(expr "$ls" : '.*-> \(.*\)$')
+  if expr "$link" : '/.*' > /dev/null; then
+    PRG="$link"
+  else
+    PRG=$(dirname "$PRG")/"$link"
+  fi
+done
+MAVEN_PROJECTBASEDIR=$(cd "$(dirname "$PRG")" && pwd)
+
+WRAPPER_JAR="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.jar"
+WRAPPER_PROPERTIES="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.properties"
+
+# ---- Read wrapperUrl from properties ----------------------------------------
+WRAPPER_URL=$(grep '^wrapperUrl=' "$WRAPPER_PROPERTIES" | sed 's/wrapperUrl=//' | tr -d '\r')
+
+# ---- Download maven-wrapper.jar if missing ----------------------------------
+if [ ! -f "$WRAPPER_JAR" ]; then
+  if [ -z "$WRAPPER_URL" ]; then
+    echo "ERROR: wrapperUrl not set in $WRAPPER_PROPERTIES" >&2
+    exit 1
+  fi
+  echo "Downloading maven-wrapper.jar from $WRAPPER_URL"
+  if command -v curl > /dev/null 2>&1; then
+    curl -fsSL "$WRAPPER_URL" -o "$WRAPPER_JAR"
+  elif command -v wget > /dev/null 2>&1; then
+    wget -q "$WRAPPER_URL" -O "$WRAPPER_JAR"
+  else
+    echo "ERROR: curl or wget is required to download maven-wrapper.jar" >&2
+    exit 1
+  fi
+fi
+
+# ---- Locate Java ------------------------------------------------------------
+if [ -n "$JAVA_HOME" ]; then
+  JAVA_CMD="$JAVA_HOME/bin/java"
+else
+  JAVA_CMD="java"
+fi
+
+# ---- Execute Maven via wrapper jar ------------------------------------------
+exec "$JAVA_CMD" $MAVEN_OPTS \
+  -classpath "$WRAPPER_JAR" \
+  "-Dmaven.multiModuleProjectDirectory=$MAVEN_PROJECTBASEDIR" \
+  org.apache.maven.wrapper.MavenWrapperMain \
+  "$@"

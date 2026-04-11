@@ -1,0 +1,16 @@
+# Local development overrides — loaded automatically when spring.profiles.active=local
+spring:
+  datasource:
+    # Matches docker-compose mysql service
+    url: jdbc:mysql://localhost:3306/camera_app?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: camera
+    password: camera123
+
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.camera.app: DEBUG
+    org.springframework.security: DEBUG
+    org.flywaydb: DEBUG
