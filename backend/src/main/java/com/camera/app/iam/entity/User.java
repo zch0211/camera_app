@@ -23,6 +23,9 @@ public class User {
     @Column(nullable = false, unique = true, length = 64)
     private String username;
 
+    @Column(length = 64)
+    private String nickname;
+
     @Column(nullable = false)
     private String password;
 

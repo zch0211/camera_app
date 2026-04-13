@@ -3,6 +3,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\security\SecurityConfig.
 D:\code\camera_app\backend\src\main\java\com\camera\app\common\response\ApiResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\service\UserDetailsServiceImpl.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\security\JwtTokenProvider.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\UserInfoResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\entity\Role.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\entity\User.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\security\JwtAuthenticationFilter.java

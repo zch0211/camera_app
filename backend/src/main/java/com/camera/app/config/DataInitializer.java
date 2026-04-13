@@ -50,6 +50,7 @@ public class DataInitializer implements ApplicationRunner {
         if (!userRepository.existsByUsername("admin")) {
             var admin = new User();
             admin.setUsername("admin");
+            admin.setNickname("系统管理员");
             admin.setPassword(passwordEncoder.encode("Admin@123"));
             admin.setEmail("admin@camera.local");
             admin.setRoles(Set.of(roleRepository.findByName("ROLE_ADMIN").orElseThrow()));
