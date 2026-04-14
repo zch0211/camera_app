@@ -1,7 +1,9 @@
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\UserResponse.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\service\AssetService.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\common\exception\GlobalExceptionHandler.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\service\UserDetailsServiceImpl.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\security\JwtTokenProvider.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\entity\Asset.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\UserInfoResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\entity\Role.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\service\UserServiceImpl.java
@@ -11,6 +13,8 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\iam\repository\UserRepos
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\service\UserService.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\LoginRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\CameraAppApplication.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\controller\AssetController.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\AssetUpdateRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\LoginResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\UserUpdateRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\security\JwtProperties.java
@@ -18,9 +22,13 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\iam\controller\UserContr
 D:\code\camera_app\backend\src\main\java\com\camera\app\security\SecurityConfig.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\common\response\ApiResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\entity\User.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\service\AssetServiceImpl.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\AssetResponse.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\AssetCreateRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\repository\RoleRepository.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\UserCreateRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\common\response\PageResult.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\repository\AssetRepository.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\config\OpenApiConfig.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\config\DataInitializer.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\controller\AuthController.java
