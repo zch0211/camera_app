@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.camera.app.iam.controller.UserControllerTest
+-------------------------------------------------------------------------------
+Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.084 s -- in com.camera.app.iam.controller.UserControllerTest

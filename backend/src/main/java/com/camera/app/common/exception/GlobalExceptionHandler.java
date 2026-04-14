@@ -3,6 +3,7 @@ package com.camera.app.common.exception;
 import com.camera.app.common.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
@@ -27,9 +28,14 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BusinessException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<?> handleBusiness(BusinessException ex) {
-        return ApiResponse.error(ex.getCode(), ex.getMessage());
+    public ResponseEntity<ApiResponse<?>> handleBusiness(BusinessException ex) {
+        HttpStatus status = switch (ex.getCode()) {
+            case 404 -> HttpStatus.NOT_FOUND;
+            case 409 -> HttpStatus.CONFLICT;
+            case 403 -> HttpStatus.FORBIDDEN;
+            default  -> HttpStatus.BAD_REQUEST;
+        };
+        return ResponseEntity.status(status).body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
