@@ -27,6 +27,11 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 52MB
+
 springdoc:
   api-docs:
     path: /v3/api-docs
@@ -39,6 +44,11 @@ app:
   jwt:
     secret: Y2FtZXJhQXBwU2VjcmV0S2V5Rm9ySldUU2lnbmluZ0RlZmF1bHQyMDI0
     expiration-ms: 86400000  # 24 hours
+  minio:
+    endpoint: http://localhost:9000
+    access-key: minioadmin
+    secret-key: minioadmin123
+    bucket: poc-files
 
 logging:
   level:
