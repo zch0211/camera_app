@@ -97,12 +97,12 @@ public class PocController {
             @RequestParam(required = false) String description,
             @Parameter(description = "CVE 编号，如 CVE-2024-12345")
             @RequestParam(required = false) String cveId,
-            @Parameter(description = "严重等级：LOW / MEDIUM / HIGH / CRITICAL", required = true)
-            @RequestParam String severity,
+            @Parameter(description = "严重等级：LOW / MEDIUM / HIGH / CRITICAL，默认 MEDIUM")
+            @RequestParam(defaultValue = "MEDIUM") String severity,
             @Parameter(description = "文件语言：PYTHON / JAVA / GO / SHELL / OTHER（不传则自动推断）")
             @RequestParam(required = false) String language,
-            @Parameter(description = "目标类型：CAMERA / ROUTER / NVR / PLATFORM / OTHER", required = true)
-            @RequestParam String targetType,
+            @Parameter(description = "目标类型：CAMERA / ROUTER / NVR / PLATFORM / OTHER，默认 OTHER")
+            @RequestParam(defaultValue = "OTHER") String targetType,
             @Parameter(description = "适用厂商")
             @RequestParam(required = false) String vendor,
             @Parameter(description = "协议类型：HTTP / HTTPS / RTSP / ONVIF / TCP / UDP / OTHER")
