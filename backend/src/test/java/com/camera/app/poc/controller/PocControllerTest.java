@@ -2,6 +2,7 @@ package com.camera.app.poc.controller;
 
 import com.camera.app.common.exception.BusinessException;
 import com.camera.app.common.response.PageResult;
+import com.camera.app.poc.dto.PocContentResponse;
 import com.camera.app.poc.dto.PocListItemResponse;
 import com.camera.app.poc.dto.PocResponse;
 import com.camera.app.poc.dto.PocUpdateRequest;
@@ -297,5 +298,107 @@ class PocControllerTest {
         mockMvc.perform(get("/api/v1/pocs/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(404));
+    }
+
+    // ─── 10. 内容预览：admin 可查看 .py 文件 ─────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminCanPreviewPyFile() throws Exception {
+        Poc poc = buildPoc("exploit.py");
+        PocContentResponse resp = PocContentResponse.previewable(poc, "import requests\nprint('poc')", false);
+        when(pocService.getPocContent(1L)).thenReturn(resp);
+
+        mockMvc.perform(get("/api/v1/pocs/1/content"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.previewable").value(true))
+                .andExpect(jsonPath("$.data.truncated").value(false))
+                .andExpect(jsonPath("$.data.contentPreview").value("import requests\nprint('poc')"));
+    }
+
+    // ─── 11. 内容预览：operator 可查看 .py 文件 ──────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "OPERATOR")
+    void operatorCanPreviewPyFile() throws Exception {
+        Poc poc = buildPoc("exploit.py");
+        PocContentResponse resp = PocContentResponse.previewable(poc, "import requests", false);
+        when(pocService.getPocContent(1L)).thenReturn(resp);
+
+        mockMvc.perform(get("/api/v1/pocs/1/content"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.previewable").value(true));
+    }
+
+    // ─── 12. 内容预览：viewer 不能访问 ────────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    void viewerCannotPreviewPocContent() throws Exception {
+        mockMvc.perform(get("/api/v1/pocs/1/content"))
+                .andExpect(status().isForbidden());
+    }
+
+    // ─── 13. 内容预览：不存在的 POC → 404 ────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void contentPreviewNotFoundShouldReturn404() throws Exception {
+        when(pocService.getPocContent(999L))
+                .thenThrow(new BusinessException(404, "POC 不存在，id=999"));
+
+        mockMvc.perform(get("/api/v1/pocs/999/content"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(404));
+    }
+
+    // ─── 14. 内容预览：二进制文件 → previewable=false ─────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void binaryFileReturnsNotPreviewable() throws Exception {
+        Poc poc = buildPoc("exploit.exe");
+        PocContentResponse resp = PocContentResponse.notPreviewable(poc, "file type is not previewable");
+        when(pocService.getPocContent(1L)).thenReturn(resp);
+
+        mockMvc.perform(get("/api/v1/pocs/1/content"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.previewable").value(false))
+                .andExpect(jsonPath("$.data.message").value("file type is not previewable"));
+    }
+
+    // ─── 15. 内容预览：超大文件 → truncated=true ─────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void largeFileReturnsTruncated() throws Exception {
+        Poc poc = buildPoc("big.py");
+        PocContentResponse resp = PocContentResponse.previewable(poc, "# truncated content...", true);
+        when(pocService.getPocContent(1L)).thenReturn(resp);
+
+        mockMvc.perform(get("/api/v1/pocs/1/content"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.previewable").value(true))
+                .andExpect(jsonPath("$.data.truncated").value(true));
+    }
+
+    // ─── 辅助方法 ─────────────────────────────────────────────────────────────
+
+    private Poc buildPoc(String filename) {
+        Poc poc = new Poc();
+        poc.setName("test poc");
+        poc.setLanguage(Language.PYTHON);
+        poc.setTargetType(TargetType.CAMERA);
+        poc.setSeverity(Severity.HIGH);
+        poc.setObjectKey("pocs/uuid/" + filename);
+        poc.setOriginalFilename(filename);
+        poc.setContentType("text/plain");
+        poc.setFileSize(1024L);
+        poc.setEnabled(true);
+        poc.setStatus(PocStatus.ACTIVE);
+        poc.setCreatedAt(LocalDateTime.now());
+        poc.setUpdatedAt(LocalDateTime.now());
+        return poc;
     }
 }

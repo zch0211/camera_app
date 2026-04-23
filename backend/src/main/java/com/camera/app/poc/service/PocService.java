@@ -1,6 +1,7 @@
 package com.camera.app.poc.service;
 
 import com.camera.app.common.response.PageResult;
+import com.camera.app.poc.dto.PocContentResponse;
 import com.camera.app.poc.dto.PocListItemResponse;
 import com.camera.app.poc.dto.PocResponse;
 import com.camera.app.poc.dto.PocUpdateRequest;
@@ -30,6 +31,8 @@ public interface PocService {
             String createdBy);
 
     PocDownloadResult downloadPoc(Long id);
+
+    PocContentResponse getPocContent(Long id);
 
     PocResponse updatePoc(Long id, PocUpdateRequest request);
 

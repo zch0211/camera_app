@@ -33,6 +33,7 @@ com\camera\app\asset\dto\AssetUpdateRequest.class
 com\camera\app\iam\service\UserService.class
 com\camera\app\iam\dto\UserUpdateRequest.class
 com\camera\app\iam\dto\LoginResponse.class
+com\camera\app\poc\dto\PocContentResponse.class
 com\camera\app\iam\entity\User.class
 com\camera\app\poc\repository\PocRepository.class
 com\camera\app\iam\controller\AuthController.class

@@ -44,6 +44,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\CameraAppApplication.jav
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\UserUpdateRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\controller\UserController.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\common\response\ApiResponse.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocContentResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\entity\User.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\storage\MinioStorageService.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\AssetCreateRequest.java

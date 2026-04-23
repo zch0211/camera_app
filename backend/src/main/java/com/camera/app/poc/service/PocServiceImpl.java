@@ -2,6 +2,7 @@ package com.camera.app.poc.service;
 
 import com.camera.app.common.exception.BusinessException;
 import com.camera.app.common.response.PageResult;
+import com.camera.app.poc.dto.PocContentResponse;
 import com.camera.app.poc.dto.PocListItemResponse;
 import com.camera.app.poc.dto.PocResponse;
 import com.camera.app.poc.dto.PocUpdateRequest;
@@ -22,10 +23,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -35,6 +43,11 @@ import java.util.UUID;
 public class PocServiceImpl implements PocService {
 
     private static final long MAX_FILE_SIZE = 50L * 1024 * 1024; // 50 MB
+    private static final int MAX_PREVIEW_BYTES = 200 * 1024;     // 200 KB
+    private static final int MAX_PREVIEW_LINES = 5000;
+    private static final Set<String> PREVIEWABLE_EXTENSIONS = Set.of(
+            ".py", ".txt", ".json", ".yaml", ".yml", ".xml",
+            ".js", ".java", ".go", ".sh", ".md");
 
     private final PocRepository pocRepository;
     private final FileStorageService fileStorageService;
@@ -207,6 +220,49 @@ public class PocServiceImpl implements PocService {
         }
     }
 
+    // ─── Content Preview ──────────────────────────────────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public PocContentResponse getPocContent(Long id) {
+        Poc poc = findActiveById(id);
+
+        String ext = extractExtension(poc.getOriginalFilename());
+        if (!PREVIEWABLE_EXTENSIONS.contains(ext)) {
+            return PocContentResponse.notPreviewable(poc, "file type is not previewable");
+        }
+
+        try (InputStream is = fileStorageService.download(poc.getObjectKey())) {
+            // Read one extra byte to detect truncation without loading whole file
+            byte[] buffer = is.readNBytes(MAX_PREVIEW_BYTES + 1);
+            boolean bytesTruncated = buffer.length > MAX_PREVIEW_BYTES;
+            byte[] previewBytes = bytesTruncated ? Arrays.copyOf(buffer, MAX_PREVIEW_BYTES) : buffer;
+
+            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT);
+            String text;
+            try {
+                text = decoder.decode(ByteBuffer.wrap(previewBytes)).toString();
+            } catch (CharacterCodingException e) {
+                return PocContentResponse.notPreviewable(poc, "file encoding is not supported");
+            }
+
+            boolean linesTruncated = false;
+            String[] lines = text.split("\n", MAX_PREVIEW_LINES + 2);
+            if (lines.length > MAX_PREVIEW_LINES) {
+                text = String.join("\n", Arrays.copyOf(lines, MAX_PREVIEW_LINES));
+                linesTruncated = true;
+            }
+
+            return PocContentResponse.previewable(poc, text, bytesTruncated || linesTruncated);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException(500, "读取文件内容失败: " + e.getMessage());
+        }
+    }
+
     // ─── 私有辅助方法 ──────────────────────────────────────────────────────────
 
     private Poc findActiveById(Long id) {
@@ -300,5 +356,11 @@ public class PocServiceImpl implements PocService {
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    private String extractExtension(String filename) {
+        if (!StringUtils.hasText(filename)) return "";
+        int dot = filename.lastIndexOf('.');
+        return dot >= 0 ? filename.substring(dot).toLowerCase() : "";
     }
 }

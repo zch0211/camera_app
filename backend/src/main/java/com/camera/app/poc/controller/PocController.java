@@ -2,6 +2,7 @@ package com.camera.app.poc.controller;
 
 import com.camera.app.common.response.ApiResponse;
 import com.camera.app.common.response.PageResult;
+import com.camera.app.poc.dto.PocContentResponse;
 import com.camera.app.poc.dto.PocListItemResponse;
 import com.camera.app.poc.dto.PocResponse;
 import com.camera.app.poc.dto.PocUpdateRequest;
@@ -139,6 +140,20 @@ public class PocController {
                         "attachment; filename*=UTF-8''" + encodedFilename)
                 .contentType(MediaType.parseMediaType(result.contentType()))
                 .body(new InputStreamResource(result.inputStream()));
+    }
+
+    // ─── 内容预览 ──────────────────────────────────────────────────────────────
+
+    @Operation(
+            summary = "预览 POC 文件内容",
+            description = "权限: ROLE_ADMIN / ROLE_OPERATOR。返回文件文本内容（仅文本型文件）。不执行文件，只读取存储内容。"
+                    + "最多返回 200 KB / 5000 行，超出则 truncated=true。不支持的类型返回 previewable=false。"
+    )
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @GetMapping("/{id}/content")
+    public ApiResponse<PocContentResponse> getPocContent(
+            @Parameter(description = "POC ID") @PathVariable Long id) {
+        return ApiResponse.ok(pocService.getPocContent(id));
     }
 
     // ─── 修改元数据 ────────────────────────────────────────────────────────────
