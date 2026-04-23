@@ -3,10 +3,13 @@ package com.camera.app.poc.controller;
 import com.camera.app.common.response.ApiResponse;
 import com.camera.app.common.response.PageResult;
 import com.camera.app.poc.dto.PocContentResponse;
+import com.camera.app.poc.dto.PocExecuteRequest;
+import com.camera.app.poc.dto.PocExecuteResponse;
 import com.camera.app.poc.dto.PocListItemResponse;
 import com.camera.app.poc.dto.PocResponse;
 import com.camera.app.poc.dto.PocUpdateRequest;
 import com.camera.app.poc.service.PocDownloadResult;
+import com.camera.app.poc.service.PocExecutionService;
 import com.camera.app.poc.service.PocService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -37,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 public class PocController {
 
     private final PocService pocService;
+    private final PocExecutionService pocExecutionService;
 
     // ─── 列表 ──────────────────────────────────────────────────────────────────
 
@@ -154,6 +158,35 @@ public class PocController {
     public ApiResponse<PocContentResponse> getPocContent(
             @Parameter(description = "POC ID") @PathVariable Long id) {
         return ApiResponse.ok(pocService.getPocContent(id));
+    }
+
+    // ─── 执行 POC ─────────────────────────────────────────────────────────────
+
+    @Operation(
+            summary = "执行 POC 文件（受控本地子进程）",
+            description = """
+                    权限: ROLE_ADMIN / ROLE_OPERATOR。
+                    在受控本地子进程中执行指定 POC 脚本，采集 stdout / stderr / exitCode。
+
+                    **执行边界**
+                    - 仅支持 .py 文件
+                    - 通过 ProcessBuilder 数组形式启动，不使用 shell=true，防止命令注入
+                    - 默认超时 10 秒，最大 30 秒，超时后强制终止子进程
+                    - stdout / stderr 各限制 64 KB，超出部分截断（truncated=true）
+                    - 参数中的 null 字节自动过滤；最多 20 个参数，每个不超过 1000 字符
+                    - 脚本运行在独立临时目录，执行完毕后自动清理
+
+                    **assetId 自动注入**
+                    传入 assetId 后，系统自动将该资产的 IP 作为第一个参数注入脚本，
+                    适用于对实验环境资产（摄像头/路由器/NVR/平台系统）执行扫描。
+                    """
+    )
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PostMapping("/{id}/execute")
+    public ApiResponse<PocExecuteResponse> executePoc(
+            @Parameter(description = "POC ID") @PathVariable Long id,
+            @Valid @RequestBody PocExecuteRequest request) {
+        return ApiResponse.ok(pocExecutionService.execute(id, request));
     }
 
     // ─── 修改元数据 ────────────────────────────────────────────────────────────

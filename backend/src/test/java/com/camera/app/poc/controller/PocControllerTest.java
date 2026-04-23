@@ -3,11 +3,14 @@ package com.camera.app.poc.controller;
 import com.camera.app.common.exception.BusinessException;
 import com.camera.app.common.response.PageResult;
 import com.camera.app.poc.dto.PocContentResponse;
+import com.camera.app.poc.dto.PocExecuteRequest;
+import com.camera.app.poc.dto.PocExecuteResponse;
 import com.camera.app.poc.dto.PocListItemResponse;
 import com.camera.app.poc.dto.PocResponse;
 import com.camera.app.poc.dto.PocUpdateRequest;
 import com.camera.app.poc.entity.*;
 import com.camera.app.poc.service.PocDownloadResult;
+import com.camera.app.poc.service.PocExecutionService;
 import com.camera.app.poc.service.PocService;
 import com.camera.app.security.JwtTokenProvider;
 import com.camera.app.security.SecurityConfig;
@@ -53,6 +56,9 @@ class PocControllerTest {
 
     @MockBean
     PocService pocService;
+
+    @MockBean
+    PocExecutionService pocExecutionService;
 
     @MockBean
     JwtTokenProvider jwtTokenProvider;
@@ -380,6 +386,121 @@ class PocControllerTest {
         mockMvc.perform(get("/api/v1/pocs/1/content"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.previewable").value(true))
+                .andExpect(jsonPath("$.data.truncated").value(true));
+    }
+
+    // ─── 16. admin 可执行 .py 文件 ───────────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminCanExecutePyFile() throws Exception {
+        PocExecuteResponse resp = PocExecuteResponse.builder()
+                .pocId(1L).executed(true).success(true).exitCode(0)
+                .stdout("hello poc").stderr("").truncated(false)
+                .startedAt(LocalDateTime.now()).finishedAt(LocalDateTime.now())
+                .durationMs(120L).build();
+        when(pocExecutionService.execute(eq(1L), any())).thenReturn(resp);
+
+        PocExecuteRequest req = new PocExecuteRequest();
+        req.setArguments(List.of("--help"));
+
+        mockMvc.perform(post("/api/v1/pocs/1/execute")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.executed").value(true))
+                .andExpect(jsonPath("$.data.success").value(true))
+                .andExpect(jsonPath("$.data.exitCode").value(0))
+                .andExpect(jsonPath("$.data.stdout").value("hello poc"));
+    }
+
+    // ─── 17. operator 可执行 .py 文件 ────────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "OPERATOR")
+    void operatorCanExecutePyFile() throws Exception {
+        PocExecuteResponse resp = PocExecuteResponse.builder()
+                .pocId(1L).executed(true).success(true).exitCode(0)
+                .stdout("ok").stderr("").truncated(false)
+                .startedAt(LocalDateTime.now()).finishedAt(LocalDateTime.now())
+                .durationMs(50L).build();
+        when(pocExecutionService.execute(eq(1L), any())).thenReturn(resp);
+
+        mockMvc.perform(post("/api/v1/pocs/1/execute")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new PocExecuteRequest())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.success").value(true));
+    }
+
+    // ─── 18. viewer 不能访问执行接口 ─────────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    void viewerCannotExecutePoc() throws Exception {
+        mockMvc.perform(post("/api/v1/pocs/1/execute")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new PocExecuteRequest())))
+                .andExpect(status().isForbidden());
+    }
+
+    // ─── 19. 非 .py 文件 → executed=false ────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void nonPyFileReturnsNotExecuted() throws Exception {
+        PocExecuteResponse resp = PocExecuteResponse.builder()
+                .pocId(2L).executed(false)
+                .message("only .py files are supported for execution").build();
+        when(pocExecutionService.execute(eq(2L), any())).thenReturn(resp);
+
+        mockMvc.perform(post("/api/v1/pocs/2/execute")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new PocExecuteRequest())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.executed").value(false))
+                .andExpect(jsonPath("$.data.message").value("only .py files are supported for execution"));
+    }
+
+    // ─── 20. 超时任务被中断 ───────────────────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void timeoutExecutionReturnsMessage() throws Exception {
+        PocExecuteResponse resp = PocExecuteResponse.builder()
+                .pocId(1L).executed(true).success(false)
+                .stdout("").stderr("").truncated(false)
+                .startedAt(LocalDateTime.now()).finishedAt(LocalDateTime.now())
+                .durationMs(10001L).message("execution timed out after 10 seconds").build();
+        when(pocExecutionService.execute(eq(1L), any())).thenReturn(resp);
+
+        PocExecuteRequest req = new PocExecuteRequest();
+        req.setTimeoutSeconds(10);
+
+        mockMvc.perform(post("/api/v1/pocs/1/execute")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.success").value(false))
+                .andExpect(jsonPath("$.data.message").value(org.hamcrest.Matchers.containsString("timed out")));
+    }
+
+    // ─── 21. 超长输出被截断 ───────────────────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void oversizedOutputReturnsTruncated() throws Exception {
+        PocExecuteResponse resp = PocExecuteResponse.builder()
+                .pocId(1L).executed(true).success(true).exitCode(0)
+                .stdout("A".repeat(100)).stderr("").truncated(true)
+                .startedAt(LocalDateTime.now()).finishedAt(LocalDateTime.now())
+                .durationMs(200L).build();
+        when(pocExecutionService.execute(eq(1L), any())).thenReturn(resp);
+
+        mockMvc.perform(post("/api/v1/pocs/1/execute")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new PocExecuteRequest())))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.truncated").value(true));
     }
 

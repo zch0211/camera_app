@@ -8,6 +8,7 @@ com\camera\app\poc\dto\PocListItemResponse.class
 com\camera\app\asset\controller\AssetController.class
 com\camera\app\asset\service\AssetService.class
 com\camera\app\system\SystemController.class
+com\camera\app\poc\service\PocExecutionServiceImpl.class
 com\camera\app\security\JwtTokenProvider.class
 com\camera\app\common\response\PageResult.class
 com\camera\app\iam\dto\UserCreateRequest.class
@@ -17,6 +18,8 @@ com\camera\app\iam\entity\Role.class
 com\camera\app\iam\service\UserDetailsServiceImpl.class
 com\camera\app\iam\service\UserServiceImpl.class
 com\camera\app\poc\service\PocService.class
+com\camera\app\poc\dto\PocExecuteResponse$PocExecuteResponseBuilder.class
+com\camera\app\poc\dto\PocExecuteRequest.class
 com\camera\app\poc\entity\Protocol.class
 com\camera\app\security\SecurityConfig.class
 com\camera\app\security\JwtProperties.class
@@ -28,6 +31,7 @@ com\camera\app\poc\entity\Poc.class
 com\camera\app\common\response\ApiResponse.class
 com\camera\app\iam\repository\RoleRepository.class
 com\camera\app\config\MinioProperties.class
+com\camera\app\poc\service\PocExecutionService.class
 com\camera\app\poc\dto\PocResponse.class
 com\camera\app\asset\dto\AssetUpdateRequest.class
 com\camera\app\iam\service\UserService.class
@@ -49,6 +53,7 @@ com\camera\app\config\OpenApiConfig.class
 com\camera\app\poc\service\PocDownloadResult.class
 com\camera\app\storage\FileStorageService.class
 com\camera\app\poc\entity\TargetType.class
+com\camera\app\poc\dto\PocExecuteResponse.class
 com\camera\app\iam\dto\UserResponse.class
 com\camera\app\iam\repository\UserRepository.class
 com\camera\app\config\MinioConfig.class
