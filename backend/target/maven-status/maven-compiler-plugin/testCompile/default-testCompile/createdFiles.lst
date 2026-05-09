@@ -1,4 +1,5 @@
 com\camera\app\iam\controller\UserControllerTest.class
+com\camera\app\kg\controller\KgControllerTest.class
 com\camera\app\poc\controller\PocControllerTest.class
 com\camera\app\asset\controller\AssetControllerTest.class
 com\camera\app\CameraAppApplicationTests.class

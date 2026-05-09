@@ -14,3 +14,12 @@ logging:
     com.camera.app: DEBUG
     org.springframework.security: DEBUG
     org.flywaydb: DEBUG
+    org.neo4j.driver: WARN
+
+# 知识图谱 — Neo4j 只读接入
+kg:
+  camera:
+    uri: neo4j://127.0.0.1:7687
+    database: neo4j
+    username: neo4j
+    password: 12345678
