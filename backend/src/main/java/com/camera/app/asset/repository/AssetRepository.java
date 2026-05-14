@@ -9,4 +9,6 @@ public interface AssetRepository extends JpaRepository<Asset, Long>, JpaSpecific
     boolean existsByIp(String ip);
 
     boolean existsByIpAndIdNot(String ip, Long id);
+
+    long countByOnline(boolean online);
 }

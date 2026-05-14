@@ -1,0 +1,20 @@
+CREATE TABLE poc_execution_logs (
+    id              BIGINT          NOT NULL AUTO_INCREMENT,
+    poc_id          BIGINT          NOT NULL,
+    asset_id        BIGINT,
+    executed_by     VARCHAR(100)    NOT NULL,
+    success         TINYINT(1),
+    exit_code       INT,
+    stdout          MEDIUMTEXT,
+    stderr          MEDIUMTEXT,
+    truncated       TINYINT(1)      NOT NULL DEFAULT 0,
+    started_at      DATETIME(6),
+    finished_at     DATETIME(6),
+    duration_ms     BIGINT,
+    created_at      DATETIME(6)     NOT NULL,
+    PRIMARY KEY (id),
+    INDEX idx_poc_exec_poc_id   (poc_id),
+    INDEX idx_poc_exec_asset_id (asset_id),
+    INDEX idx_poc_exec_success  (success),
+    INDEX idx_poc_exec_created  (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

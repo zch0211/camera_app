@@ -60,6 +60,7 @@ public class SecurityConfig {
                     "/api/v1/auth/login",
                     "/api/v1/auth/logout",
                     "/api/v1/system/health",
+                    "/api/v1/system/enums",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/v3/api-docs/**"

@@ -185,8 +185,10 @@ public class PocController {
     @PostMapping("/{id}/execute")
     public ApiResponse<PocExecuteResponse> executePoc(
             @Parameter(description = "POC ID") @PathVariable Long id,
-            @Valid @RequestBody PocExecuteRequest request) {
-        return ApiResponse.ok(pocExecutionService.execute(id, request));
+            @Valid @RequestBody PocExecuteRequest request,
+            Authentication authentication) {
+        String executedBy = authentication != null ? authentication.getName() : "unknown";
+        return ApiResponse.ok(pocExecutionService.execute(id, request, executedBy));
     }
 
     // ─── 修改元数据 ────────────────────────────────────────────────────────────

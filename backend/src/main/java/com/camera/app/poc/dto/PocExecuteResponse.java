@@ -6,10 +6,13 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 public class PocExecuteResponse {
 
     private Long pocId;
+
+    /** 执行记录 ID，executed=true 时存在；保存失败时为 null */
+    private Long executionId;
 
     /** 是否实际启动了子进程（false 表示因校验失败而未执行） */
     private boolean executed;

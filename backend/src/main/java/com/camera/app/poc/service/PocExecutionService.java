@@ -5,5 +5,5 @@ import com.camera.app.poc.dto.PocExecuteResponse;
 
 public interface PocExecutionService {
 
-    PocExecuteResponse execute(Long pocId, PocExecuteRequest request);
+    PocExecuteResponse execute(Long pocId, PocExecuteRequest request, String executedBy);
 }

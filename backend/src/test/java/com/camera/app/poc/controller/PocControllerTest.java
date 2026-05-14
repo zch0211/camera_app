@@ -399,7 +399,7 @@ class PocControllerTest {
                 .stdout("hello poc").stderr("").truncated(false)
                 .startedAt(LocalDateTime.now()).finishedAt(LocalDateTime.now())
                 .durationMs(120L).build();
-        when(pocExecutionService.execute(eq(1L), any())).thenReturn(resp);
+        when(pocExecutionService.execute(eq(1L), any(), anyString())).thenReturn(resp);
 
         PocExecuteRequest req = new PocExecuteRequest();
         req.setArguments(List.of("--help"));
@@ -424,7 +424,7 @@ class PocControllerTest {
                 .stdout("ok").stderr("").truncated(false)
                 .startedAt(LocalDateTime.now()).finishedAt(LocalDateTime.now())
                 .durationMs(50L).build();
-        when(pocExecutionService.execute(eq(1L), any())).thenReturn(resp);
+        when(pocExecutionService.execute(eq(1L), any(), anyString())).thenReturn(resp);
 
         mockMvc.perform(post("/api/v1/pocs/1/execute")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -452,7 +452,7 @@ class PocControllerTest {
         PocExecuteResponse resp = PocExecuteResponse.builder()
                 .pocId(2L).executed(false)
                 .message("only .py files are supported for execution").build();
-        when(pocExecutionService.execute(eq(2L), any())).thenReturn(resp);
+        when(pocExecutionService.execute(eq(2L), any(), anyString())).thenReturn(resp);
 
         mockMvc.perform(post("/api/v1/pocs/2/execute")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -472,7 +472,7 @@ class PocControllerTest {
                 .stdout("").stderr("").truncated(false)
                 .startedAt(LocalDateTime.now()).finishedAt(LocalDateTime.now())
                 .durationMs(10001L).message("execution timed out after 10 seconds").build();
-        when(pocExecutionService.execute(eq(1L), any())).thenReturn(resp);
+        when(pocExecutionService.execute(eq(1L), any(), anyString())).thenReturn(resp);
 
         PocExecuteRequest req = new PocExecuteRequest();
         req.setTimeoutSeconds(10);
@@ -495,7 +495,7 @@ class PocControllerTest {
                 .stdout("A".repeat(100)).stderr("").truncated(true)
                 .startedAt(LocalDateTime.now()).finishedAt(LocalDateTime.now())
                 .durationMs(200L).build();
-        when(pocExecutionService.execute(eq(1L), any())).thenReturn(resp);
+        when(pocExecutionService.execute(eq(1L), any(), anyString())).thenReturn(resp);
 
         mockMvc.perform(post("/api/v1/pocs/1/execute")
                         .contentType(MediaType.APPLICATION_JSON)
