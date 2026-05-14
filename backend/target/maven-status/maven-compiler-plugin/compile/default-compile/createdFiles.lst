@@ -43,6 +43,7 @@ com\camera\app\poc\service\PocServiceImpl.class
 com\camera\app\config\OpenApiConfig.class
 com\camera\app\poc\service\PocDownloadResult.class
 com\camera\app\storage\FileStorageService.class
+com\camera\app\poc\dto\ParamField$ParamFieldBuilder.class
 com\camera\app\iam\dto\UserResponse.class
 com\camera\app\kg\dto\VulnHintsResponse.class
 com\camera\app\poc\repository\PocExecutionLogRepository.class
@@ -68,6 +69,7 @@ com\camera\app\poc\entity\Protocol.class
 com\camera\app\kg\config\CameraKgConfig.class
 com\camera\app\kg\dto\VulnHintItem.class
 com\camera\app\dashboard\DashboardOverviewResponse$DashboardOverviewResponseBuilder.class
+com\camera\app\poc\dto\ParamField.class
 com\camera\app\kg\dto\GraphEdge.class
 com\camera\app\poc\service\PocExecutionLogServiceImpl.class
 com\camera\app\poc\service\PocExecutionServiceImpl$1.class

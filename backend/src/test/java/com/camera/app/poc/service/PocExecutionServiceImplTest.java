@@ -2,6 +2,7 @@ package com.camera.app.poc.service;
 
 import com.camera.app.asset.entity.Asset;
 import com.camera.app.asset.repository.AssetRepository;
+import com.camera.app.common.exception.BusinessException;
 import com.camera.app.poc.dto.PocExecuteRequest;
 import com.camera.app.poc.dto.PocExecuteResponse;
 import com.camera.app.poc.entity.ExecutionMode;
@@ -21,10 +22,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -148,6 +151,59 @@ class PocExecutionServiceImplTest {
         assertThat(resp.getMessage()).contains("-u");
         assertThat(resp.getMessage()).contains("http://192.168.1.100:8080");
         assertThat(resp.getMessage()).contains("--check");
+
+        verify(fileStorageService, never()).download(any());
+        verify(pocExecutionLogService, never()).save(any());
+    }
+
+    // ─── 5. EXPLOIT + params.cmd → dry-run argv contains --cmd ───────────────
+
+    @Test
+    void dryRun_exploitModeWithCmd_argvContainsCmdFlag() {
+        pyPoc.setLanguage(Language.PYTHON);
+        when(pocRepository.findById(1L)).thenReturn(Optional.of(pyPoc));
+
+        Asset asset = new Asset();
+        asset.setId(3L);
+        asset.setIp("192.168.1.100");
+        when(assetRepository.findById(3L)).thenReturn(Optional.of(asset));
+
+        PocExecuteRequest req = new PocExecuteRequest();
+        req.setMode(ExecutionMode.EXPLOIT);
+        req.setTargetStrategy(TargetStrategy.EXPLICIT_PORT);
+        req.setPort(8080);
+        req.setAssetId(3L);
+        req.setParams(Map.of("cmd", "whoami"));
+        req.setDryRun(true);
+
+        PocExecuteResponse resp = service.execute(1L, req, "admin");
+
+        assertThat(resp.isExecuted()).isFalse();
+        assertThat(resp.getMessage()).contains("DRY-RUN");
+        assertThat(resp.getMessage()).contains("-u");
+        assertThat(resp.getMessage()).contains("http://192.168.1.100:8080");
+        assertThat(resp.getMessage()).contains("--cmd");
+        assertThat(resp.getMessage()).contains("whoami");
+        assertThat(resp.getMessage()).doesNotContain("--check");
+
+        verify(fileStorageService, never()).download(any());
+        verify(pocExecutionLogService, never()).save(any());
+    }
+
+    // ─── 6. EXPLOIT missing params.cmd → 400 BusinessException ───────────────
+
+    @Test
+    void exploitMode_missingCmd_throws400() {
+        pyPoc.setLanguage(Language.PYTHON);
+        when(pocRepository.findById(1L)).thenReturn(Optional.of(pyPoc));
+
+        PocExecuteRequest req = new PocExecuteRequest();
+        req.setMode(ExecutionMode.EXPLOIT);
+        req.setDryRun(true);
+
+        assertThatThrownBy(() -> service.execute(1L, req, "admin"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("params.cmd");
 
         verify(fileStorageService, never()).download(any());
         verify(pocExecutionLogService, never()).save(any());

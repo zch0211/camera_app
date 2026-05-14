@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Builder
@@ -52,6 +53,11 @@ public class PocExecutionSchema {
     @Schema(description = "模板版本号，用于后续演进兼容")
     private int schemaVersion;
 
-    @Schema(description = "结构化参数定义（本轮预留，返回空列表）")
-    private List<Object> paramSchema;
+    @Schema(description = """
+            各执行模式的参数字段定义。
+            key = 模式名（CHECK / EXPLOIT），value = 该模式需要的 params 字段列表。
+            CHECK → 空列表（无额外参数）；
+            EXPLOIT → [{ name:"cmd", type:"text", required:true }]（需要 params.cmd）
+            """)
+    private Map<String, List<ParamField>> paramSchemaByMode;
 }

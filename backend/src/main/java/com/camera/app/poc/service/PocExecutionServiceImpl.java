@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import com.camera.app.poc.dto.ParamField;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -58,6 +61,19 @@ public class PocExecutionServiceImpl implements PocExecutionService {
 
         List<Integer> recommendedPorts = deriveRecommendedPorts(poc);
 
+        Map<String, List<ParamField>> paramSchemaByMode = Map.of(
+                "CHECK", List.of(),
+                "EXPLOIT", List.of(
+                        ParamField.builder()
+                                .name("cmd")
+                                .label("命令")
+                                .type("text")
+                                .required(true)
+                                .placeholder("请输入要执行的命令，如 whoami")
+                                .build()
+                )
+        );
+
         return PocExecutionSchema.builder()
                 .pocId(pocId)
                 .language(poc.getLanguage() != null ? poc.getLanguage().name() : "UNKNOWN")
@@ -73,7 +89,7 @@ public class PocExecutionServiceImpl implements PocExecutionService {
                 .supportsAutoPortSuggestion(!recommendedPorts.isEmpty())
                 .highRisk(false)
                 .schemaVersion(1)
-                .paramSchema(List.of())
+                .paramSchemaByMode(paramSchemaByMode)
                 .build();
     }
 
@@ -93,6 +109,7 @@ public class PocExecutionServiceImpl implements PocExecutionService {
         }
 
         ExecutionMode mode = request.getMode() != null ? request.getMode() : ExecutionMode.CHECK;
+        validateModeParams(mode, request);
         ExecCtx ctx = buildExecCtx(request, poc, mode);
 
         // ── Dry-run: return resolved argv without running the script ──────────
@@ -101,9 +118,9 @@ public class PocExecutionServiceImpl implements PocExecutionService {
             previewCmd.add("python");
             previewCmd.add(poc.getOriginalFilename());
             previewCmd.addAll(ctx.args());
-            log.info("[POC-DRYRUN] pocId={} mode={} strategy={} assetId={} port={} target={} argv={}",
+            log.info("[POC-DRYRUN] pocId={} mode={} strategy={} assetId={} port={} target={} params={} argv={}",
                     pocId, mode, ctx.targetStrategy(), request.getAssetId(),
-                    ctx.finalPort(), ctx.usedTarget(), previewCmd);
+                    ctx.finalPort(), ctx.usedTarget(), request.getParams(), previewCmd);
             return PocExecuteResponse.builder()
                     .pocId(pocId)
                     .executed(false)
@@ -129,9 +146,9 @@ public class PocExecutionServiceImpl implements PocExecutionService {
             debugCmd.add("python");
             debugCmd.add(poc.getOriginalFilename());
             debugCmd.addAll(ctx.args());
-            log.debug("[POC-EXEC] pocId={} mode={} strategy={} assetId={} port={} target={} argv={}",
+            log.debug("[POC-EXEC] pocId={} mode={} strategy={} assetId={} port={} target={} params={} argv={}",
                     pocId, mode, ctx.targetStrategy(), request.getAssetId(),
-                    ctx.finalPort(), ctx.usedTarget(), debugCmd);
+                    ctx.finalPort(), ctx.usedTarget(), request.getParams(), debugCmd);
 
             response = runScript(pocId, script, ctx.args(), request.getTimeoutSeconds(),
                     mode, ctx.targetStrategy(), ctx.finalPort(), ctx.usedTarget());
@@ -195,8 +212,25 @@ public class PocExecutionServiceImpl implements PocExecutionService {
         }
 
         // Delegate mode→flag mapping to PocArgAssembler (single responsibility)
-        List<String> args = PocArgAssembler.assemble(mode, usedTarget, urlMode, request.getArguments());
+        List<String> args = PocArgAssembler.assemble(mode, usedTarget, urlMode, request.getArguments(), request.getParams());
         return new ExecCtx(args, strategy, finalPort, usedTarget);
+    }
+
+    // ─── Private: mode-param validation ──────────────────────────────────────
+
+    private void validateModeParams(ExecutionMode mode, PocExecuteRequest request) {
+        if (mode == ExecutionMode.EXPLOIT) {
+            String cmd = extractParamString(request.getParams(), "cmd");
+            if (cmd == null || cmd.isBlank()) {
+                throw new BusinessException(400, "EXPLOIT 模式需要 params.cmd");
+            }
+        }
+    }
+
+    private String extractParamString(Map<String, Object> params, String key) {
+        if (params == null) return null;
+        Object v = params.get(key);
+        return v == null ? null : v.toString();
     }
 
     // ─── Private: port scanning ───────────────────────────────────────────────

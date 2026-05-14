@@ -172,6 +172,9 @@ public class PocController {
                     **返回说明**
                     - executable=false：该 POC 当前不可执行（非 Python / 非 .py 文件），reason 说明原因
                     - modes：支持的执行模式（CHECK=安全检测，EXPLOIT=漏洞利用）
+                    - paramSchemaByMode：各模式所需的 params 字段定义
+                      · CHECK  → 空列表（无额外参数）
+                      · EXPLOIT → [{ name:"cmd", type:"text", required:true }]，前端需采集 params.cmd
                     - recommendedPorts：根据 POC 的 protocol / targetType 推导，供自动端口扫描使用
                     - supportedTargetStrategies：EXPLICIT_PORT=显式端口，RECOMMENDED_PORT_SCAN=自动扫描
                     - schemaVersion=1：本轮初始版本，后续演进时递增
@@ -196,13 +199,16 @@ public class PocController {
                     权限: ROLE_ADMIN / ROLE_OPERATOR。
 
                     **结构化执行（推荐）**
-                    使用 mode / targetStrategy / port / assetId 字段：
+                    使用 mode / targetStrategy / port / assetId / params 字段：
                     - mode：CHECK（默认，安全检测）或 EXPLOIT（高风险，漏洞利用）
                     - targetStrategy：
                       · EXPLICIT_PORT — 配合 port 字段显式指定端口，系统注入 -u http://ip:port
                       · RECOMMENDED_PORT_SCAN — 系统自动 TCP 扫描 POC 推荐端口，选第一个可达端口注入
                     - port：显式端口（EXPLICIT_PORT 时使用）
                     - assetId：关联资产，自动注入目标 IP
+                    - params：模式专属参数 Map
+                      · mode=CHECK  → params 不需要任何字段；脚本 argv 追加 --check
+                      · mode=EXPLOIT → params.cmd 必填（缺失或为空返回 400）；脚本 argv 追加 --cmd <cmd>
 
                     **兼容执行（旧接口，仍可用）**
                     使用 arguments / assetPort 字段，行为与之前一致。
