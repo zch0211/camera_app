@@ -27,7 +27,8 @@ public class UserController {
 
     @Operation(
             summary = "分页查询用户列表",
-            description = "权限: ROLE_ADMIN / ROLE_OPERATOR。支持按 username/nickname 模糊搜索及启用状态过滤"
+            description = "权限: ROLE_ADMIN / ROLE_OPERATOR。支持按 username/nickname 模糊搜索及启用状态过滤。" +
+                    "响应 data 字段为分页对象，包含 content（列表）、totalElements、totalPages、page、size"
     )
     @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
     @GetMapping
@@ -56,8 +57,16 @@ public class UserController {
 
     @Operation(
             summary = "创建用户",
-            description = "权限: ROLE_ADMIN。角色可选值: ROLE_ADMIN / ROLE_OPERATOR / ROLE_VIEWER"
+            description = "权限: ROLE_ADMIN。角色可选值: ROLE_ADMIN / ROLE_OPERATOR / ROLE_VIEWER。" +
+                    "必填字段: username、password、roles；enabled 不传默认为 true"
     )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "创建成功"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400",
+                    description = "参数校验失败（username/password/roles 为空、email 格式错误、角色名无效等）"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409",
+                    description = "用户名已存在")
+    })
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -67,9 +76,18 @@ public class UserController {
     }
 
     @Operation(
-            summary = "修改用户",
-            description = "权限: ROLE_ADMIN。所有字段均为可选，仅传需修改的字段"
+            summary = "修改用户（部分更新）",
+            description = "权限: ROLE_ADMIN。所有字段均为可选，仅传需修改的字段，不传的字段保持原值不变。" +
+                    "可更新字段: nickname、email、enabled、roles、password。" +
+                    "password 为空或不传时不修改密码。roles 传空数组 [] 将返回 400 错误。"
     )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "修改成功"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400",
+                    description = "参数校验失败（email 格式错误、角色名无效、roles 传空数组等）"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404",
+                    description = "用户不存在")
+    })
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ApiResponse<UserResponse> updateUser(
@@ -80,8 +98,15 @@ public class UserController {
 
     @Operation(
             summary = "删除用户",
-            description = "权限: ROLE_ADMIN。物理删除，禁止删除默认 admin 账号"
+            description = "权限: ROLE_ADMIN。物理删除，默认管理员账号（username=admin）不允许删除"
     )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "删除成功"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403",
+                    description = "默认管理员账号不允许删除"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404",
+                    description = "用户不存在")
+    })
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteUser(

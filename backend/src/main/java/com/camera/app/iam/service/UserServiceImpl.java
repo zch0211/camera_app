@@ -78,7 +78,10 @@ public class UserServiceImpl implements UserService {
         if (request.getEnabled() != null) {
             user.setEnabled(request.getEnabled());
         }
-        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+        if (request.getRoles() != null) {
+            if (request.getRoles().isEmpty()) {
+                throw new BusinessException(400, "角色列表不能为空，至少需要指定一个角色");
+            }
             user.setRoles(resolveRoles(request.getRoles()));
         }
         if (StringUtils.hasText(request.getPassword())) {
@@ -91,7 +94,7 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(Long id) {
         User user = findById(id);
         if ("admin".equals(user.getUsername())) {
-            throw new BusinessException(403, "禁止删除默认管理员账号");
+            throw new BusinessException(403, "默认管理员账号不允许删除");
         }
         userRepository.delete(user);
     }
