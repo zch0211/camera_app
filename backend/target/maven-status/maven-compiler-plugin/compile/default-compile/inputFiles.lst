@@ -46,6 +46,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocExecutionLogS
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\service\impl\CameraKgServiceImpl.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocExecuteResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocExecutionService.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocArgAssembler.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocDownloadResult.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\entity\AssetType.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\common\exception\GlobalExceptionHandler.java

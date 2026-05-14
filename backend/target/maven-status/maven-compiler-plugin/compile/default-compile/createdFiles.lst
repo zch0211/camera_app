@@ -25,6 +25,7 @@ com\camera\app\common\exception\BusinessException.class
 com\camera\app\iam\repository\RoleRepository.class
 com\camera\app\config\MinioProperties.class
 com\camera\app\kg\dto\EnrichResponse.class
+com\camera\app\poc\service\PocArgAssembler.class
 com\camera\app\poc\service\PocExecutionService.class
 com\camera\app\kg\dto\GraphEdge$GraphEdgeBuilder.class
 com\camera\app\kg\service\CameraKgService.class

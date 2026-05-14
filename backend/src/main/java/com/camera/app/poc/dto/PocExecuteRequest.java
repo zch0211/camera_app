@@ -38,6 +38,10 @@ public class PocExecuteRequest {
     @Schema(description = "结构化参数（本轮预留，可传入但暂不解析）")
     private Map<String, Object> params;
 
+    @Schema(description = "【仅开发调试】dry-run=true 时不执行脚本，只返回解析出的 argv，用于验证参数组装是否正确",
+            example = "false")
+    private boolean dryRun = false;
+
     // ── 兼容字段（旧接口路径，新接口请使用上方字段）────────────────────────────
 
     @Size(max = 20, message = "最多传入 20 个参数")

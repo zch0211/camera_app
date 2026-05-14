@@ -131,7 +131,7 @@ class AssetControllerTest {
     void operatorCanListAssets() throws Exception {
         PageResult<AssetResponse> pageResult =
                 new PageResult<>(new PageImpl<>(List.of(sampleAsset), PageRequest.of(0, 20), 1));
-        when(assetService.listAssets(any(), any(), any(), any(), anyInt(), anyInt()))
+        when(assetService.listAssets(any(), any(), any(), any(), any(), anyInt(), anyInt()))
                 .thenReturn(pageResult);
 
         mockMvc.perform(get("/api/v1/assets"))

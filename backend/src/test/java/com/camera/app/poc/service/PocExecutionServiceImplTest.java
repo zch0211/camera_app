@@ -1,11 +1,15 @@
 package com.camera.app.poc.service;
 
+import com.camera.app.asset.entity.Asset;
 import com.camera.app.asset.repository.AssetRepository;
 import com.camera.app.poc.dto.PocExecuteRequest;
 import com.camera.app.poc.dto.PocExecuteResponse;
+import com.camera.app.poc.entity.ExecutionMode;
+import com.camera.app.poc.entity.Language;
 import com.camera.app.poc.entity.Poc;
 import com.camera.app.poc.entity.PocExecutionLog;
 import com.camera.app.poc.entity.PocStatus;
+import com.camera.app.poc.entity.TargetStrategy;
 import com.camera.app.poc.repository.PocRepository;
 import com.camera.app.storage.FileStorageService;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,6 +120,37 @@ class PocExecutionServiceImplTest {
 
         assertThat(resp.isExecuted()).isTrue();
         assertThat(resp.getExecutionId()).isNull(); // graceful degradation
+    }
+
+    // ─── 4. dry-run resolves argv without executing subprocess ───────────────
+
+    @Test
+    void dryRun_checkModeExplicitPort_returnsArgvWithoutExecuting() {
+        pyPoc.setLanguage(Language.PYTHON);
+        when(pocRepository.findById(1L)).thenReturn(Optional.of(pyPoc));
+
+        Asset asset = new Asset();
+        asset.setId(3L);
+        asset.setIp("192.168.1.100");
+        when(assetRepository.findById(3L)).thenReturn(Optional.of(asset));
+
+        PocExecuteRequest req = new PocExecuteRequest();
+        req.setMode(ExecutionMode.CHECK);
+        req.setTargetStrategy(TargetStrategy.EXPLICIT_PORT);
+        req.setPort(8080);
+        req.setAssetId(3L);
+        req.setDryRun(true);
+
+        PocExecuteResponse resp = service.execute(1L, req, "admin");
+
+        assertThat(resp.isExecuted()).isFalse();
+        assertThat(resp.getMessage()).contains("DRY-RUN");
+        assertThat(resp.getMessage()).contains("-u");
+        assertThat(resp.getMessage()).contains("http://192.168.1.100:8080");
+        assertThat(resp.getMessage()).contains("--check");
+
+        verify(fileStorageService, never()).download(any());
+        verify(pocExecutionLogService, never()).save(any());
     }
 
     // ─── helper ───────────────────────────────────────────────────────────────

@@ -3,7 +3,8 @@
     "allow": [
       "Bash(./mvnw compile *)",
       "Bash(./mvnw test *)",
-      "Bash(Get-ChildItem *)"
+      "Bash(Get-ChildItem *)",
+      "Bash(./mvnw test-compile *)"
     ]
   }
 }

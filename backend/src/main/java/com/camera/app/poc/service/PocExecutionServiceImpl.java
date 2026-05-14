@@ -93,7 +93,27 @@ public class PocExecutionServiceImpl implements PocExecutionService {
         }
 
         ExecutionMode mode = request.getMode() != null ? request.getMode() : ExecutionMode.CHECK;
-        ExecCtx ctx = buildExecCtx(request, poc);
+        ExecCtx ctx = buildExecCtx(request, poc, mode);
+
+        // ── Dry-run: return resolved argv without running the script ──────────
+        if (request.isDryRun()) {
+            List<String> previewCmd = new ArrayList<>();
+            previewCmd.add("python");
+            previewCmd.add(poc.getOriginalFilename());
+            previewCmd.addAll(ctx.args());
+            log.info("[POC-DRYRUN] pocId={} mode={} strategy={} assetId={} port={} target={} argv={}",
+                    pocId, mode, ctx.targetStrategy(), request.getAssetId(),
+                    ctx.finalPort(), ctx.usedTarget(), previewCmd);
+            return PocExecuteResponse.builder()
+                    .pocId(pocId)
+                    .executed(false)
+                    .mode(mode)
+                    .targetStrategy(ctx.targetStrategy())
+                    .finalPort(ctx.finalPort())
+                    .usedTarget(ctx.usedTarget())
+                    .message("DRY-RUN: argv=" + previewCmd)
+                    .build();
+        }
 
         Path tempDir = null;
         PocExecuteResponse response;
@@ -103,6 +123,16 @@ public class PocExecutionServiceImpl implements PocExecutionService {
             try (InputStream is = fileStorageService.download(poc.getObjectKey())) {
                 Files.copy(is, script);
             }
+
+            // Debug log showing the exact argv passed to the subprocess
+            List<String> debugCmd = new ArrayList<>();
+            debugCmd.add("python");
+            debugCmd.add(poc.getOriginalFilename());
+            debugCmd.addAll(ctx.args());
+            log.debug("[POC-EXEC] pocId={} mode={} strategy={} assetId={} port={} target={} argv={}",
+                    pocId, mode, ctx.targetStrategy(), request.getAssetId(),
+                    ctx.finalPort(), ctx.usedTarget(), debugCmd);
+
             response = runScript(pocId, script, ctx.args(), request.getTimeoutSeconds(),
                     mode, ctx.targetStrategy(), ctx.finalPort(), ctx.usedTarget());
         } catch (BusinessException e) {
@@ -120,11 +150,16 @@ public class PocExecutionServiceImpl implements PocExecutionService {
 
     // ─── Private: context builder ─────────────────────────────────────────────
 
-    private ExecCtx buildExecCtx(PocExecuteRequest request, Poc poc) {
-        List<String> args = new ArrayList<>();
+    /**
+     * Resolves target IP/port/strategy from the request, then delegates to
+     * {@link PocArgAssembler#assemble} for the actual mode→flag mapping.
+     * This keeps target-resolution logic separate from mode→argv logic.
+     */
+    private ExecCtx buildExecCtx(PocExecuteRequest request, Poc poc, ExecutionMode mode) {
         TargetStrategy strategy = null;
         Integer finalPort = null;
         String usedTarget = null;
+        boolean urlMode = false;
 
         if (request.getAssetId() != null) {
             String assetIp = assetRepository.findById(request.getAssetId())
@@ -138,12 +173,11 @@ public class PocExecutionServiceImpl implements PocExecutionService {
                 List<Integer> recommended = deriveRecommendedPorts(poc);
                 effectivePort = scanForPort(assetIp, recommended);
                 if (effectivePort == null && !recommended.isEmpty()) {
-                    // fallback: use first port even if unreachable
                     effectivePort = recommended.get(0);
                     log.debug("No reachable port found, falling back to {}", effectivePort);
                 }
             } else {
-                // EXPLICIT_PORT or legacy: new `port` field takes precedence
+                // EXPLICIT_PORT or legacy: new `port` field takes precedence over `assetPort`
                 effectivePort = request.getPort() != null ? request.getPort() : request.getAssetPort();
                 if (effectivePort != null) {
                     strategy = TargetStrategy.EXPLICIT_PORT;
@@ -153,24 +187,15 @@ public class PocExecutionServiceImpl implements PocExecutionService {
             if (effectivePort != null) {
                 finalPort = effectivePort;
                 usedTarget = "http://" + assetIp + ":" + effectivePort;
-                args.add("-u");
-                args.add(usedTarget);
+                urlMode = true;
             } else {
-                // no port: inject bare IP (legacy positional-arg mode)
-                usedTarget = assetIp;
-                args.add(assetIp);
+                usedTarget = assetIp;  // legacy positional-arg mode
+                urlMode = false;
             }
         }
 
-        // Append compat arguments; filter null bytes to prevent injection
-        if (request.getArguments() != null) {
-            for (String arg : request.getArguments()) {
-                if (arg != null && !arg.contains("\0")) {
-                    args.add(arg);
-                }
-            }
-        }
-
+        // Delegate mode→flag mapping to PocArgAssembler (single responsibility)
+        List<String> args = PocArgAssembler.assemble(mode, usedTarget, urlMode, request.getArguments());
         return new ExecCtx(args, strategy, finalPort, usedTarget);
     }
 
