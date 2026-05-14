@@ -5,6 +5,7 @@ import com.camera.app.common.response.PageResult;
 import com.camera.app.poc.dto.PocContentResponse;
 import com.camera.app.poc.dto.PocExecuteRequest;
 import com.camera.app.poc.dto.PocExecuteResponse;
+import com.camera.app.poc.dto.PocExecutionSchema;
 import com.camera.app.poc.dto.PocListItemResponse;
 import com.camera.app.poc.dto.PocResponse;
 import com.camera.app.poc.dto.PocUpdateRequest;
@@ -160,27 +161,65 @@ public class PocController {
         return ApiResponse.ok(pocService.getPocContent(id));
     }
 
+    // ─── 执行模板 ──────────────────────────────────────────────────────────────
+
+    @Operation(
+            summary = "获取 POC 执行模板",
+            description = """
+                    权限: ROLE_ADMIN / ROLE_OPERATOR。
+                    返回该 POC 的结构化执行配置，前端据此动态渲染执行表单，无需了解命令行细节。
+
+                    **返回说明**
+                    - executable=false：该 POC 当前不可执行（非 Python / 非 .py 文件），reason 说明原因
+                    - modes：支持的执行模式（CHECK=安全检测，EXPLOIT=漏洞利用）
+                    - recommendedPorts：根据 POC 的 protocol / targetType 推导，供自动端口扫描使用
+                    - supportedTargetStrategies：EXPLICIT_PORT=显式端口，RECOMMENDED_PORT_SCAN=自动扫描
+                    - schemaVersion=1：本轮初始版本，后续演进时递增
+                    """
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "返回执行模板"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "POC 不存在")
+    })
+    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @GetMapping("/{id}/execution-schema")
+    public ApiResponse<PocExecutionSchema> getExecutionSchema(
+            @Parameter(description = "POC ID") @PathVariable Long id) {
+        return ApiResponse.ok(pocExecutionService.getExecutionSchema(id));
+    }
+
     // ─── 执行 POC ─────────────────────────────────────────────────────────────
 
     @Operation(
             summary = "执行 POC 文件（受控本地子进程）",
             description = """
                     权限: ROLE_ADMIN / ROLE_OPERATOR。
-                    在受控本地子进程中执行指定 POC 脚本，采集 stdout / stderr / exitCode。
+
+                    **结构化执行（推荐）**
+                    使用 mode / targetStrategy / port / assetId 字段：
+                    - mode：CHECK（默认，安全检测）或 EXPLOIT（高风险，漏洞利用）
+                    - targetStrategy：
+                      · EXPLICIT_PORT — 配合 port 字段显式指定端口，系统注入 -u http://ip:port
+                      · RECOMMENDED_PORT_SCAN — 系统自动 TCP 扫描 POC 推荐端口，选第一个可达端口注入
+                    - port：显式端口（EXPLICIT_PORT 时使用）
+                    - assetId：关联资产，自动注入目标 IP
+
+                    **兼容执行（旧接口，仍可用）**
+                    使用 arguments / assetPort 字段，行为与之前一致。
 
                     **执行边界**
-                    - 仅支持 .py 文件
-                    - 通过 ProcessBuilder 数组形式启动，不使用 shell=true，防止命令注入
-                    - 默认超时 10 秒，最大 30 秒，超时后强制终止子进程
-                    - stdout / stderr 各限制 64 KB，超出部分截断（truncated=true）
-                    - 参数中的 null 字节自动过滤；最多 20 个参数，每个不超过 1000 字符
-                    - 脚本运行在独立临时目录，执行完毕后自动清理
-
-                    **assetId 自动注入**
-                    传入 assetId 后，系统自动将该资产的 IP 作为第一个参数注入脚本，
-                    适用于对实验环境资产（摄像头/路由器/NVR/平台系统）执行扫描。
+                    - 仅支持 .py 文件（其余返回 executed=false）
+                    - ProcessBuilder 数组模式，禁止 shell=true
+                    - 超时默认 10 秒，最大 30 秒
+                    - stdout / stderr 各限 64 KB，超出截断（truncated=true）
+                    - null 字节自动过滤；arguments 最多 20 个，每个不超过 1000 字符
                     """
     )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "执行完成（含超时和失败情况）"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "参数校验失败"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "POC 或资产不存在")
+    })
     @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
     @PostMapping("/{id}/execute")
     public ApiResponse<PocExecuteResponse> executePoc(

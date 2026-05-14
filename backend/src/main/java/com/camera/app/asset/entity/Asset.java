@@ -42,6 +42,10 @@ public class Asset {
     @Column(name = "org_id")
     private Long orgId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "varchar(32)", nullable = false)
+    private AssetType type = AssetType.OTHER;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

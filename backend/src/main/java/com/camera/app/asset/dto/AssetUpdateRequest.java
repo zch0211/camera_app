@@ -1,5 +1,6 @@
 package com.camera.app.asset.dto;
 
+import com.camera.app.asset.entity.AssetType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -36,4 +37,7 @@ public class AssetUpdateRequest {
 
     @Schema(description = "所属组织 ID，不传则不修改")
     private Long orgId;
+
+    @Schema(description = "资产类型，不传则不修改。可选值: SERVER / DATABASE / ROUTER / IOT / CAMERA / NVR / PLATFORM / OTHER")
+    private AssetType type;
 }

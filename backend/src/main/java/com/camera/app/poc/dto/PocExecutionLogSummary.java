@@ -1,6 +1,8 @@
 package com.camera.app.poc.dto;
 
+import com.camera.app.poc.entity.ExecutionMode;
 import com.camera.app.poc.entity.PocExecutionLog;
+import com.camera.app.poc.entity.TargetStrategy;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -12,6 +14,10 @@ public class PocExecutionLogSummary {
     private final Long pocId;
     private final Long assetId;
     private final String executedBy;
+    private final ExecutionMode mode;
+    private final TargetStrategy targetStrategy;
+    private final Integer finalPort;
+    private final String usedTarget;
     private final Boolean success;
     private final Integer exitCode;
     private final boolean truncated;
@@ -25,6 +31,10 @@ public class PocExecutionLogSummary {
         this.pocId = log.getPocId();
         this.assetId = log.getAssetId();
         this.executedBy = log.getExecutedBy();
+        this.mode = log.getMode();
+        this.targetStrategy = log.getTargetStrategy();
+        this.finalPort = log.getFinalPort();
+        this.usedTarget = log.getUsedTarget();
         this.success = log.getSuccess();
         this.exitCode = log.getExitCode();
         this.truncated = log.isTruncated();

@@ -31,8 +31,10 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\Poc.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\security\SecurityConfig.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\service\AssetServiceImpl.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\dto\GraphResponse.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\TargetStrategy.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\AssetResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\repository\RoleRepository.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\ExecutionMode.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocUpdateRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\UserCreateRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\PocStatus.java
@@ -45,6 +47,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\kg\service\impl\CameraKg
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocExecuteResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocExecutionService.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocDownloadResult.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\entity\AssetType.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\common\exception\GlobalExceptionHandler.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\config\CameraKgConfig.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocExecutionLogServiceImpl.java
@@ -73,6 +76,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\dashboard\DashboardServi
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\client\CameraKgClient.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\dto\VulnHintsResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\AssetCreateRequest.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocExecutionSchema.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\dashboard\DashboardController.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\repository\AssetRepository.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\config\OpenApiConfig.java

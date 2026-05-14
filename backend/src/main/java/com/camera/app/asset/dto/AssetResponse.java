@@ -1,6 +1,7 @@
 package com.camera.app.asset.dto;
 
 import com.camera.app.asset.entity.Asset;
+import com.camera.app.asset.entity.AssetType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
@@ -37,6 +38,9 @@ public class AssetResponse {
     @Schema(description = "所属组织 ID")
     private final Long orgId;
 
+    @Schema(description = "资产类型: SERVER / DATABASE / ROUTER / IOT / CAMERA / NVR / PLATFORM / OTHER")
+    private final AssetType type;
+
     @Schema(description = "创建时间")
     private final LocalDateTime createdAt;
 
@@ -53,6 +57,7 @@ public class AssetResponse {
         this.online = asset.isOnline();
         this.riskScore = asset.getRiskScore();
         this.orgId = asset.getOrgId();
+        this.type = asset.getType();
         this.createdAt = asset.getCreatedAt();
         this.updatedAt = asset.getUpdatedAt();
     }

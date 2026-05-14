@@ -1,5 +1,6 @@
 package com.camera.app.asset.dto;
 
+import com.camera.app.asset.entity.AssetType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -39,4 +40,8 @@ public class AssetCreateRequest {
 
     @Schema(description = "所属组织 ID（可选）")
     private Long orgId;
+
+    @Schema(description = "资产类型，可选值: SERVER / DATABASE / ROUTER / IOT / CAMERA / NVR / PLATFORM / OTHER，不传默认 OTHER",
+            example = "CAMERA")
+    private AssetType type;
 }

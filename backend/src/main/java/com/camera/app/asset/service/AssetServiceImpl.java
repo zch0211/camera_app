@@ -4,6 +4,7 @@ import com.camera.app.asset.dto.AssetCreateRequest;
 import com.camera.app.asset.dto.AssetResponse;
 import com.camera.app.asset.dto.AssetUpdateRequest;
 import com.camera.app.asset.entity.Asset;
+import com.camera.app.asset.entity.AssetType;
 import com.camera.app.asset.repository.AssetRepository;
 import com.camera.app.common.exception.BusinessException;
 import com.camera.app.common.response.PageResult;
@@ -30,9 +31,9 @@ public class AssetServiceImpl implements AssetService {
     @Override
     @Transactional(readOnly = true)
     public PageResult<AssetResponse> listAssets(String keyword, String brand, String model,
-                                                Boolean online, int page, int size) {
+                                                Boolean online, AssetType type, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Specification<Asset> spec = buildSpec(keyword, brand, model, online);
+        Specification<Asset> spec = buildSpec(keyword, brand, model, online, type);
         return new PageResult<>(assetRepository.findAll(spec, pageable).map(AssetResponse::new));
     }
 
@@ -56,6 +57,7 @@ public class AssetServiceImpl implements AssetService {
         asset.setOnline(request.isOnline());
         asset.setRiskScore(request.getRiskScore() != null ? request.getRiskScore() : 0);
         asset.setOrgId(request.getOrgId());
+        asset.setType(request.getType() != null ? request.getType() : AssetType.OTHER);
         return new AssetResponse(assetRepository.save(asset));
     }
 
@@ -89,6 +91,9 @@ public class AssetServiceImpl implements AssetService {
         if (request.getOrgId() != null) {
             asset.setOrgId(request.getOrgId());
         }
+        if (request.getType() != null) {
+            asset.setType(request.getType());
+        }
         return new AssetResponse(assetRepository.save(asset));
     }
 
@@ -103,24 +108,30 @@ public class AssetServiceImpl implements AssetService {
                 .orElseThrow(() -> new BusinessException(404, "资产不存在，id=" + id));
     }
 
-    private Specification<Asset> buildSpec(String keyword, String brand, String model, Boolean online) {
+    private Specification<Asset> buildSpec(String keyword, String brand, String model,
+                                           Boolean online, AssetType type) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (StringUtils.hasText(keyword)) {
-                String like = "%" + keyword.toLowerCase() + "%";
+                String like = "%" + keyword.trim().toLowerCase() + "%";
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("name")), like),
                         cb.like(cb.lower(root.get("ip")), like)
                 ));
             }
             if (StringUtils.hasText(brand)) {
-                predicates.add(cb.equal(root.get("brand"), brand));
+                String like = "%" + brand.trim().toLowerCase() + "%";
+                predicates.add(cb.like(cb.lower(root.get("brand")), like));
             }
             if (StringUtils.hasText(model)) {
-                predicates.add(cb.equal(root.get("model"), model));
+                String like = "%" + model.trim().toLowerCase() + "%";
+                predicates.add(cb.like(cb.lower(root.get("model")), like));
             }
             if (online != null) {
                 predicates.add(cb.equal(root.get("online"), online));
+            }
+            if (type != null) {
+                predicates.add(cb.equal(root.get("type"), type));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };

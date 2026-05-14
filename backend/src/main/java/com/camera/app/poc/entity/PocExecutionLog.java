@@ -26,6 +26,20 @@ public class PocExecutionLog {
     @Column(name = "executed_by", nullable = false, length = 100)
     private String executedBy;
 
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "varchar(32)")
+    private ExecutionMode mode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_strategy", columnDefinition = "varchar(32)")
+    private TargetStrategy targetStrategy;
+
+    @Column(name = "final_port")
+    private Integer finalPort;
+
+    @Column(name = "used_target", length = 500)
+    private String usedTarget;
+
     private Boolean success;
 
     @Column(name = "exit_code")

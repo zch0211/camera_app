@@ -29,6 +29,7 @@ com\camera\app\poc\service\PocExecutionService.class
 com\camera\app\kg\dto\GraphEdge$GraphEdgeBuilder.class
 com\camera\app\kg\service\CameraKgService.class
 com\camera\app\iam\service\UserService.class
+com\camera\app\poc\entity\TargetStrategy.class
 com\camera\app\poc\dto\PocContentResponse.class
 com\camera\app\iam\entity\User.class
 com\camera\app\poc\repository\PocRepository.class
@@ -49,11 +50,13 @@ com\camera\app\asset\service\AssetServiceImpl.class
 com\camera\app\CameraAppApplication.class
 com\camera\app\iam\dto\LoginRequest.class
 com\camera\app\common\exception\GlobalExceptionHandler.class
+com\camera\app\poc\dto\PocExecutionSchema.class
 com\camera\app\system\SystemController.class
 com\camera\app\security\JwtTokenProvider.class
 com\camera\app\common\response\PageResult.class
 com\camera\app\iam\dto\UserCreateRequest.class
 com\camera\app\kg\dto\GraphResponse$GraphResponseBuilder.class
+com\camera\app\asset\entity\AssetType.class
 com\camera\app\poc\service\PocExecutionLogService.class
 com\camera\app\dashboard\DashboardServiceImpl.class
 com\camera\app\kg\dto\VulnHintsResponse$VulnHintsResponseBuilder.class
@@ -66,8 +69,11 @@ com\camera\app\kg\dto\VulnHintItem.class
 com\camera\app\dashboard\DashboardOverviewResponse$DashboardOverviewResponseBuilder.class
 com\camera\app\kg\dto\GraphEdge.class
 com\camera\app\poc\service\PocExecutionLogServiceImpl.class
+com\camera\app\poc\service\PocExecutionServiceImpl$1.class
 com\camera\app\poc\entity\Poc.class
 com\camera\app\common\response\ApiResponse.class
+com\camera\app\poc\dto\PocExecutionSchema$PocExecutionSchemaBuilder.class
+com\camera\app\poc\entity\ExecutionMode.class
 com\camera\app\poc\dto\PocResponse.class
 com\camera\app\asset\dto\AssetUpdateRequest.class
 com\camera\app\dashboard\DashboardService.class
@@ -84,6 +90,7 @@ com\camera\app\poc\controller\PocExecutionController.class
 com\camera\app\kg\dto\EnrichResponse$EnrichResponseBuilder.class
 com\camera\app\poc\dto\PocExecuteResponse.class
 com\camera\app\iam\repository\UserRepository.class
+com\camera\app\poc\service\PocExecutionServiceImpl$ExecCtx.class
 com\camera\app\kg\service\impl\CameraKgServiceImpl.class
 com\camera\app\config\MinioConfig.class
 com\camera\app\dashboard\DashboardOverviewResponse.class

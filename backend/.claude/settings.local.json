@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(./mvnw compile *)",
-      "Bash(./mvnw test *)"
+      "Bash(./mvnw test *)",
+      "Bash(Get-ChildItem *)"
     ]
   }
 }
