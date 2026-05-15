@@ -1,6 +1,9 @@
 package com.camera.app.system;
 
 import com.camera.app.asset.entity.InferenceCandidateSourceType;
+import com.camera.app.collection.entity.CollectionTaskStatus;
+import com.camera.app.collection.entity.CollectionTaskType;
+import com.camera.app.collection.entity.ProbeType;
 import com.camera.app.common.response.ApiResponse;
 import com.camera.app.poc.entity.Language;
 import com.camera.app.poc.entity.PocStatus;
@@ -50,6 +53,9 @@ public class SystemController {
         result.put("pocStatus", Arrays.stream(PocStatus.values()).map(Enum::name).toList());
         result.put("enabledStatus", List.of("ENABLED", "DISABLED"));
         result.put("inferenceCandidateSourceTypes", Arrays.stream(InferenceCandidateSourceType.values()).map(Enum::name).toList());
+        result.put("collectionTaskTypes",    Arrays.stream(CollectionTaskType.values()).map(Enum::name).toList());
+        result.put("collectionTaskStatuses", Arrays.stream(CollectionTaskStatus.values()).map(Enum::name).toList());
+        result.put("collectionProbeTypes",   Arrays.stream(ProbeType.values()).map(Enum::name).toList());
         return ApiResponse.ok(result);
     }
 }
