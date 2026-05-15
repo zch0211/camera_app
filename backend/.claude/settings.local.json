@@ -4,7 +4,10 @@
       "Bash(./mvnw compile *)",
       "Bash(./mvnw test *)",
       "Bash(Get-ChildItem *)",
-      "Bash(./mvnw test-compile *)"
+      "Bash(./mvnw test-compile *)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\code\\\\camera_app\\\\backend\\\\src\\\\main\\\\java\\\\com\\\\camera\\\\app\" -Recurse | Where-Object { $_.PSIsContainer })"
     ]
   }
 }

@@ -1,5 +1,6 @@
 package com.camera.app.system;
 
+import com.camera.app.asset.entity.InferenceCandidateSourceType;
 import com.camera.app.common.response.ApiResponse;
 import com.camera.app.poc.entity.Language;
 import com.camera.app.poc.entity.PocStatus;
@@ -35,8 +36,8 @@ public class SystemController {
 
     @Operation(
             summary = "获取系统枚举字典（无需认证）",
-            description = "返回前端所有下拉框/标签所需枚举值，避免硬编码。"
-                    + "包含角色、POC 严重等级、语言、目标类型、协议、状态等"
+            description = "返回前端所有下拉框/标签所需枚举值，避免硬编码。" +
+                    "包含角色、POC 严重等级、语言、目标类型、协议、状态，以及画像模块枚举（inferenceCandidateSourceTypes）"
     )
     @GetMapping("/enums")
     public ApiResponse<Map<String, Object>> enums() {
@@ -48,6 +49,7 @@ public class SystemController {
         result.put("pocProtocol", Arrays.stream(Protocol.values()).map(Enum::name).toList());
         result.put("pocStatus", Arrays.stream(PocStatus.values()).map(Enum::name).toList());
         result.put("enabledStatus", List.of("ENABLED", "DISABLED"));
+        result.put("inferenceCandidateSourceTypes", Arrays.stream(InferenceCandidateSourceType.values()).map(Enum::name).toList());
         return ApiResponse.ok(result);
     }
 }
