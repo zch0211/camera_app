@@ -26,6 +26,9 @@ public class AssetProfileResponse {
     @Schema(description = "证据来源列表，按采集时间降序")
     private final List<EvidenceResponse> evidences;
 
+    @Schema(description = "端口/服务识别结果列表，按端口升序；每条记录对应一个端口的最新探测结果")
+    private final List<ServiceFingerprintResponse> serviceFingerprints;
+
     @Schema(description = "知识图谱增强占位（后续版本填充）")
     private final KnowledgeEnhancementPlaceholder knowledgeEnhancement;
 

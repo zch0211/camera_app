@@ -3,10 +3,12 @@ package com.camera.app.asset.service;
 import com.camera.app.asset.dto.*;
 import com.camera.app.asset.entity.AssetEvidence;
 import com.camera.app.asset.entity.AssetInferenceCandidate;
+import com.camera.app.asset.entity.AssetServiceFingerprint;
 import com.camera.app.asset.entity.AssetTechnicalProfile;
 import com.camera.app.asset.repository.AssetEvidenceRepository;
 import com.camera.app.asset.repository.AssetInferenceCandidateRepository;
 import com.camera.app.asset.repository.AssetRepository;
+import com.camera.app.asset.repository.AssetServiceFingerprintRepository;
 import com.camera.app.asset.repository.AssetTechnicalProfileRepository;
 import com.camera.app.asset.util.TechnicalProfileConverter;
 import com.camera.app.common.exception.BusinessException;
@@ -28,6 +30,7 @@ public class AssetProfileServiceImpl implements AssetProfileService {
     private final AssetTechnicalProfileRepository technicalProfileRepository;
     private final AssetInferenceCandidateRepository candidateRepository;
     private final AssetEvidenceRepository evidenceRepository;
+    private final AssetServiceFingerprintRepository fingerprintRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -44,12 +47,15 @@ public class AssetProfileServiceImpl implements AssetProfileService {
         var evidences = evidenceRepository.findByAssetIdOrderByCollectedAtDesc(assetId)
                 .stream().map(EvidenceResponse::new).toList();
 
+        var fingerprints = fingerprintRepository.findByAssetIdOrderByPortAsc(assetId)
+                .stream().map(ServiceFingerprintResponse::new).toList();
+
         var missingFields = computeMissingFields(basicInfo, techResponse);
 
         var kgPlaceholder = new AssetProfileResponse.KnowledgeEnhancementPlaceholder(
                 false, "知识图谱增强将在后续版本中自动填充，当前可通过 /api/v1/kg/assets/{id}/enrich 手动查询");
 
-        return new AssetProfileResponse(basicInfo, techResponse, missingFields, candidates, evidences, kgPlaceholder);
+        return new AssetProfileResponse(basicInfo, techResponse, missingFields, candidates, evidences, fingerprints, kgPlaceholder);
     }
 
     @Override
@@ -132,6 +138,22 @@ public class AssetProfileServiceImpl implements AssetProfileService {
         var candidate = candidateRepository.findByIdAndAssetId(candidateId, assetId)
                 .orElseThrow(() -> new BusinessException(404, "候选推断不存在，id=" + candidateId));
         candidateRepository.delete(candidate);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ServiceFingerprintResponse> listServiceFingerprints(Long assetId) {
+        ensureAssetExists(assetId);
+        return fingerprintRepository.findByAssetIdOrderByPortAsc(assetId)
+                .stream().map(ServiceFingerprintResponse::new).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ServiceFingerprintResponse getServiceFingerprint(Long assetId, Long fingerprintId) {
+        AssetServiceFingerprint fp = fingerprintRepository.findByIdAndAssetId(fingerprintId, assetId)
+                .orElseThrow(() -> new BusinessException(404, "服务指纹不存在，id=" + fingerprintId));
+        return new ServiceFingerprintResponse(fp);
     }
 
     @Override

@@ -44,6 +44,12 @@ public class AssetEvidence {
     @Column(length = 512)
     private String note;
 
+    @Column(name = "related_port")
+    private Integer relatedPort;
+
+    @Column(name = "related_task_id")
+    private Long relatedTaskId;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

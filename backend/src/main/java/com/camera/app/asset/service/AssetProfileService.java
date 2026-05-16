@@ -8,6 +8,10 @@ public interface AssetProfileService {
 
     AssetProfileResponse getProfile(Long assetId);
 
+    List<ServiceFingerprintResponse> listServiceFingerprints(Long assetId);
+
+    ServiceFingerprintResponse getServiceFingerprint(Long assetId, Long fingerprintId);
+
     TechnicalProfileResponse getTechnicalFeatures(Long assetId);
 
     TechnicalProfileResponse updateTechnicalFeatures(Long assetId, TechnicalProfileUpdateRequest request);

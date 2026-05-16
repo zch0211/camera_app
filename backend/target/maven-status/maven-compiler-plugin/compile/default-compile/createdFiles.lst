@@ -10,6 +10,7 @@ com\camera\app\poc\service\PocExecutionServiceImpl.class
 com\camera\app\asset\entity\AssetInferenceCandidate.class
 com\camera\app\kg\dto\GraphNode$GraphNodeBuilder.class
 com\camera\app\asset\repository\AssetTechnicalProfileRepository.class
+com\camera\app\asset\repository\AssetServiceFingerprintRepository.class
 com\camera\app\iam\dto\UserInfoResponse.class
 com\camera\app\poc\dto\PocUpdateRequest.class
 com\camera\app\asset\util\TechnicalProfileConverter.class
@@ -39,6 +40,7 @@ com\camera\app\collection\probe\LightweightProbeService$PortResult.class
 com\camera\app\kg\dto\EnrichResponse.class
 com\camera\app\poc\service\PocArgAssembler.class
 com\camera\app\poc\service\PocExecutionService.class
+com\camera\app\asset\entity\AssetServiceFingerprint.class
 com\camera\app\asset\repository\AssetEvidenceRepository.class
 com\camera\app\collection\probe\LightweightProbeService$HttpResult.class
 com\camera\app\kg\dto\GraphEdge$GraphEdgeBuilder.class
@@ -81,9 +83,11 @@ com\camera\app\common\exception\GlobalExceptionHandler.class
 com\camera\app\asset\dto\AssetProfileResponse$KnowledgeEnhancementPlaceholder.class
 com\camera\app\poc\dto\PocExecutionSchema.class
 com\camera\app\system\SystemController.class
+com\camera\app\asset\controller\AssetServiceFingerprintController.class
 com\camera\app\collection\dto\CollectionTaskCreateRequest.class
 com\camera\app\asset\repository\AssetInferenceCandidateRepository.class
 com\camera\app\security\JwtTokenProvider.class
+com\camera\app\asset\dto\ServiceFingerprintResponse.class
 com\camera\app\common\response\PageResult.class
 com\camera\app\iam\dto\UserCreateRequest.class
 com\camera\app\collection\probe\LightweightProbeService.class

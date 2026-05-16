@@ -34,10 +34,10 @@ public class TechnicalProfileResponse {
     )
     private final List<String> protocols;
 
-    @Schema(description = "服务 Banner")
+    @Schema(description = "[兼容字段] 服务 Banner。采集任务不再自动写回此字段；端口级详情请查看 serviceFingerprints")
     private final String serviceBanner;
 
-    @Schema(description = "Web 标题")
+    @Schema(description = "[兼容字段] Web 标题。采集任务不再自动写回此字段；端口级详情请查看 serviceFingerprints")
     private final String webTitle;
 
     @Schema(description = "固件版本")
@@ -49,7 +49,7 @@ public class TechnicalProfileResponse {
     @Schema(description = "MAC 地址")
     private final String macAddress;
 
-    @Schema(description = "厂商线索")
+    @Schema(description = "[兼容字段] 厂商线索。采集任务不再自动写回此字段；端口级详情请查看 serviceFingerprints")
     private final String vendorHint;
 
     @Schema(description = "最后指纹采集时间，ISO datetime 格式", example = "2026-05-10T00:00:00")

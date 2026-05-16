@@ -50,6 +50,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\storage\FileStorageServi
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\repository\AssetCollectionResultRepository.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\config\CameraKgProperties.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocExecuteRequest.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\ServiceFingerprintResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\CameraAppApplication.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\controller\AssetProfileController.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\controller\KgController.java
@@ -89,12 +90,15 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\Protocol.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\security\SecurityConfig.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\service\AssetProfileService.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\entity\CollectionTaskStatus.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\entity\AssetServiceFingerprint.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\service\AssetServiceImpl.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\entity\AssetTechnicalProfile.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\repository\RoleRepository.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\ExecutionMode.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocUpdateRequest.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\repository\AssetServiceFingerprintRepository.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\UserCreateRequest.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\controller\AssetServiceFingerprintController.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\common\response\PageResult.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\ParamField.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\dashboard\DashboardOverviewResponse.java

@@ -1,10 +1,12 @@
 package com.camera.app.collection.service;
 
 import com.camera.app.asset.entity.AssetEvidence;
+import com.camera.app.asset.entity.AssetServiceFingerprint;
 import com.camera.app.asset.entity.AssetTechnicalProfile;
 import com.camera.app.asset.entity.EvidenceSourceType;
 import com.camera.app.asset.repository.AssetEvidenceRepository;
 import com.camera.app.asset.repository.AssetRepository;
+import com.camera.app.asset.repository.AssetServiceFingerprintRepository;
 import com.camera.app.asset.repository.AssetTechnicalProfileRepository;
 import com.camera.app.asset.util.TechnicalProfileConverter;
 import com.camera.app.collection.dto.CollectionResultResponse;
@@ -44,6 +46,7 @@ public class AssetCollectionServiceImpl implements AssetCollectionService {
     private final AssetCollectionResultRepository resultRepository;
     private final AssetTechnicalProfileRepository technicalProfileRepository;
     private final AssetEvidenceRepository evidenceRepository;
+    private final AssetServiceFingerprintRepository fingerprintRepository;
     private final LightweightProbeService probeService;
     private final ObjectMapper objectMapper;
 
@@ -75,8 +78,9 @@ public class AssetCollectionServiceImpl implements AssetCollectionService {
                     timeoutMs);
 
             saveRawResults(task.getId(), assetId, session);
+            writeBackServiceFingerprints(assetId, task.getId(), session);
             writeBackToProfile(assetId, session);
-            createEvidenceRecords(assetId, session);
+            createEvidenceRecords(assetId, task.getId(), session);
 
             int openCount    = session.openPorts().size();
             long httpTried   = session.httpResults().stream().filter(r -> "HTTP".equals(r.protocol())).count();
@@ -180,7 +184,73 @@ public class AssetCollectionServiceImpl implements AssetCollectionService {
         resultRepository.saveAll(batch);
     }
 
-    // ---- write-back ----
+    // ---- service fingerprint upsert ----
+
+    private void writeBackServiceFingerprints(Long assetId, Long taskId, ProbeSession session) {
+        LocalDateTime ts = session.probedAt();
+
+        for (PortResult pr : session.portResults()) {
+            AssetServiceFingerprint fp = fingerprintRepository.findByAssetIdAndPort(assetId, pr.port())
+                    .orElseGet(() -> {
+                        var f = new AssetServiceFingerprint();
+                        f.setAssetId(assetId);
+                        f.setPort(pr.port());
+                        return f;
+                    });
+
+            fp.setStatus(pr.open() ? "OPEN" : "CLOSED");
+            fp.setLastCollectedAt(ts);
+            fp.setLastTaskId(taskId);
+
+            if (pr.banner() != null && !pr.banner().isBlank()) {
+                fp.setServiceBanner(pr.banner());
+            }
+
+            // 找该端口成功的 HTTP 或 HTTPS 探测结果（HTTP 优先，HTTPS 次之）
+            LightweightProbeService.HttpResult httpResult = session.httpResults().stream()
+                    .filter(r -> r.port() == pr.port() && r.success() && "HTTP".equals(r.protocol()))
+                    .findFirst()
+                    .orElse(null);
+            if (httpResult == null) {
+                httpResult = session.httpResults().stream()
+                        .filter(r -> r.port() == pr.port() && r.success() && "HTTPS".equals(r.protocol()))
+                        .findFirst()
+                        .orElse(null);
+            }
+
+            if (httpResult != null) {
+                fp.setApplicationProtocol(httpResult.protocol());
+                fp.setScheme(httpResult.protocol().toLowerCase());
+                if (httpResult.title() != null && !httpResult.title().isBlank()) {
+                    fp.setWebTitle(httpResult.title());
+                }
+                if (httpResult.serverHeader() != null && !httpResult.serverHeader().isBlank()) {
+                    fp.setServerHeader(httpResult.serverHeader());
+                    fp.setVendorHint(httpResult.serverHeader());
+                }
+                fp.setRawSummary(buildFingerprintSummary(pr.port(), httpResult));
+            } else if (pr.open()) {
+                // 端口开放但无 HTTP 响应
+                fp.setApplicationProtocol("UNKNOWN");
+                fp.setRawSummary("port=" + pr.port() + " open, no HTTP/HTTPS response");
+            }
+
+            fingerprintRepository.save(fp);
+        }
+    }
+
+    private String buildFingerprintSummary(int port, LightweightProbeService.HttpResult r) {
+        StringBuilder sb = new StringBuilder("port=").append(port)
+                .append(" protocol=").append(r.protocol());
+        if (r.title() != null) sb.append(" title=").append(r.title());
+        if (r.serverHeader() != null) sb.append(" server=").append(r.serverHeader());
+        return sb.toString();
+    }
+
+    // ---- write-back to device-level profile ----
+    // 仅写回真正属于设备级的聚合字段：openPorts / protocols / lastFingerprintAt
+    // webTitle / vendorHint / serviceBanner 属于端口/服务级信息，由 service fingerprints 表负责，
+    // 不再由采集任务自动覆盖设备级摘要，避免把某一端口的服务特征误标为设备厂商线索。
 
     private void writeBackToProfile(Long assetId, ProbeSession session) {
         AssetTechnicalProfile profile = technicalProfileRepository.findByAssetId(assetId)
@@ -202,28 +272,17 @@ public class AssetCollectionServiceImpl implements AssetCollectionService {
         }
         profile.setProtocols(TechnicalProfileConverter.protocolsToJson(mergedProto));
 
-        // webTitle：有值覆盖
-        String title = session.bestWebTitle();
-        if (title != null && !title.isBlank()) profile.setWebTitle(title);
-
-        // vendorHint：优先填充空位
-        String vendor = session.bestVendorHint();
-        if (vendor != null && !vendor.isBlank()) {
-            if (profile.getVendorHint() == null || profile.getVendorHint().isBlank()) {
-                profile.setVendorHint(vendor);
-            }
-        }
-
         profile.setLastFingerprintAt(session.probedAt());
         technicalProfileRepository.save(profile);
     }
 
     // ---- evidence generation ----
 
-    private void createEvidenceRecords(Long assetId, ProbeSession session) {
+    private void createEvidenceRecords(Long assetId, Long taskId, ProbeSession session) {
         LocalDateTime ts = session.probedAt();
         List<AssetEvidence> batch = new ArrayList<>();
 
+        // 汇总所有开放端口的证据（设备级，不带端口）
         if (!session.openPorts().isEmpty()) {
             batch.add(buildEvidence(assetId, "openPorts",
                     session.openPorts().toString(),
@@ -232,7 +291,7 @@ public class AssetCollectionServiceImpl implements AssetCollectionService {
                             .filter(PortResult::open)
                             .map(pr -> pr.port() + " open")
                             .collect(Collectors.joining(", ")),
-                    new BigDecimal("0.90"), ts));
+                    new BigDecimal("0.90"), ts, null, taskId));
         }
 
         if (!session.detectedProtocols().isEmpty()) {
@@ -240,21 +299,26 @@ public class AssetCollectionServiceImpl implements AssetCollectionService {
                     session.detectedProtocols().toString(),
                     EvidenceSourceType.SCAN,
                     "HTTP/HTTPS 探测发现协议: " + session.detectedProtocols(),
-                    new BigDecimal("0.90"), ts));
+                    new BigDecimal("0.90"), ts, null, taskId));
         }
 
-        String title = session.bestWebTitle();
-        if (title != null && !title.isBlank()) {
-            batch.add(buildEvidence(assetId, "webTitle", title,
-                    EvidenceSourceType.SCAN, "HTTP/HTTPS 页面标题",
-                    new BigDecimal("0.95"), ts));
-        }
+        // 每个成功探测的 HTTP/HTTPS 端口各自生成一条证据，携带 relatedPort
+        for (LightweightProbeService.HttpResult hr : session.httpResults()) {
+            if (!hr.success()) continue;
 
-        String vendor = session.bestVendorHint();
-        if (vendor != null && !vendor.isBlank()) {
-            batch.add(buildEvidence(assetId, "vendorHint", vendor,
-                    EvidenceSourceType.SCAN, "HTTP Server 响应头: " + vendor,
-                    new BigDecimal("0.80"), ts));
+            if (hr.title() != null && !hr.title().isBlank()) {
+                batch.add(buildEvidence(assetId, "webTitle", hr.title(),
+                        EvidenceSourceType.SCAN,
+                        String.format("端口 %d %s 页面标题: %s", hr.port(), hr.protocol(), hr.title()),
+                        new BigDecimal("0.95"), ts, hr.port(), taskId));
+            }
+
+            if (hr.serverHeader() != null && !hr.serverHeader().isBlank()) {
+                batch.add(buildEvidence(assetId, "vendorHint", hr.serverHeader(),
+                        EvidenceSourceType.SCAN,
+                        String.format("端口 %d %s Server 头: %s", hr.port(), hr.protocol(), hr.serverHeader()),
+                        new BigDecimal("0.80"), ts, hr.port(), taskId));
+            }
         }
 
         evidenceRepository.saveAll(batch);
@@ -264,7 +328,8 @@ public class AssetCollectionServiceImpl implements AssetCollectionService {
 
     private AssetEvidence buildEvidence(Long assetId, String fieldName, String fieldValue,
                                         EvidenceSourceType sourceType, String rawEvidence,
-                                        BigDecimal confidence, LocalDateTime collectedAt) {
+                                        BigDecimal confidence, LocalDateTime collectedAt,
+                                        Integer relatedPort, Long relatedTaskId) {
         var e = new AssetEvidence();
         e.setAssetId(assetId);
         e.setFieldName(fieldName);
@@ -273,6 +338,8 @@ public class AssetCollectionServiceImpl implements AssetCollectionService {
         e.setRawEvidence(rawEvidence);
         e.setConfidence(confidence);
         e.setCollectedAt(collectedAt);
+        e.setRelatedPort(relatedPort);
+        e.setRelatedTaskId(relatedTaskId);
         return e;
     }
 

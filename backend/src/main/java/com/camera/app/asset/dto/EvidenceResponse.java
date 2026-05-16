@@ -39,6 +39,12 @@ public class EvidenceResponse {
     @Schema(description = "备注")
     private final String note;
 
+    @Schema(description = "关联的端口号，SCAN 类型证据会填写")
+    private final Integer relatedPort;
+
+    @Schema(description = "关联的采集任务 ID，SCAN 类型证据会填写")
+    private final Long relatedTaskId;
+
     @Schema(description = "创建时间")
     private final LocalDateTime createdAt;
 
@@ -55,6 +61,8 @@ public class EvidenceResponse {
         this.confidence = e.getConfidence();
         this.collectedAt = e.getCollectedAt();
         this.note = e.getNote();
+        this.relatedPort = e.getRelatedPort();
+        this.relatedTaskId = e.getRelatedTaskId();
         this.createdAt = e.getCreatedAt();
         this.updatedAt = e.getUpdatedAt();
     }
