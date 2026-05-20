@@ -44,6 +44,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocExecution
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\controller\AssetEvidenceController.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\TechnicalProfileUpdateRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocDownloadResult.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\collection\service\CollectionTaskExecutor.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\entity\AssetType.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\plugin\ProbePlugin.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocExecutionLogServiceImpl.java
@@ -92,6 +93,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\config\MinioProperties.j
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\UserInfoResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\dto\EnrichResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocExecutionLogResponse.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\collection\service\CollectionTaskStatusService.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\dto\DeviceTypeDetectionResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\plugin\impl\OnvifProbePlugin.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\probe\LightweightProbeService.java
@@ -99,6 +101,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\iam\service\UserService.
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\EvidenceResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\LoginRequest.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\config\AsyncConfig.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\entity\AssetCollectionResult.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\service\AssetCollectionServiceImpl.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\service\CameraKgService.java

@@ -55,6 +55,7 @@ com\camera\app\dashboard\DashboardServiceImpl.class
 com\camera\app\collection\rules\RuleContext.class
 com\camera\app\asset\dto\EvidenceRequest.class
 com\camera\app\poc\service\PocService.class
+com\camera\app\collection\service\CollectionTaskExecutor.class
 com\camera\app\poc\dto\PocExecuteRequest.class
 com\camera\app\asset\dto\ProtocolCapabilityResponse$ProtocolCapabilityResponseBuilder.class
 com\camera\app\kg\dto\VulnHintItem.class
@@ -74,6 +75,7 @@ com\camera\app\collection\plugin\ProbeContext.class
 com\camera\app\collection\rules\DeviceTypeRule.class
 com\camera\app\poc\entity\ExecutionMode.class
 com\camera\app\collection\entity\CollectionTaskType.class
+com\camera\app\config\AsyncConfig.class
 com\camera\app\collection\plugin\impl\PortProbePlugin.class
 com\camera\app\iam\dto\UserUpdateRequest.class
 com\camera\app\asset\controller\AssetInferenceCandidateController.class
@@ -135,6 +137,7 @@ com\camera\app\poc\dto\ParamField$ParamFieldBuilder.class
 com\camera\app\asset\dto\ProtocolCapabilityResponse.class
 com\camera\app\iam\dto\UserResponse.class
 com\camera\app\dashboard\DashboardController.class
+com\camera\app\collection\service\AssetCollectionServiceImpl$1.class
 com\camera\app\asset\service\AssetServiceImpl.class
 com\camera\app\CameraAppApplication.class
 com\camera\app\iam\dto\LoginRequest.class
@@ -147,6 +150,7 @@ com\camera\app\collection\rules\impl\NvrRule.class
 com\camera\app\poc\service\PocExecutionLogService.class
 com\camera\app\kg\dto\VulnHintsResponse$VulnHintsResponseBuilder.class
 com\camera\app\iam\entity\Role.class
+com\camera\app\collection\service\CollectionTaskStatusService.class
 com\camera\app\asset\dto\EvidenceResponse.class
 com\camera\app\poc\entity\Protocol.class
 com\camera\app\kg\config\CameraKgConfig.class

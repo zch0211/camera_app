@@ -5,11 +5,9 @@ import com.camera.app.collection.dto.CollectionResultResponse;
 import com.camera.app.collection.dto.CollectionTaskCreateRequest;
 import com.camera.app.collection.dto.CollectionTaskResponse;
 import com.camera.app.collection.entity.*;
-import com.camera.app.collection.plugin.*;
+import com.camera.app.collection.plugin.ProbeRegistry;
 import com.camera.app.collection.repository.AssetCollectionResultRepository;
 import com.camera.app.collection.repository.AssetCollectionTaskRepository;
-import com.camera.app.collection.rules.CategoryDetectionResult;
-import com.camera.app.collection.rules.DeviceTypeRuleEngine;
 import com.camera.app.common.exception.BusinessException;
 import com.camera.app.common.response.PageResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,12 +16,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -35,8 +31,7 @@ public class AssetCollectionServiceImpl implements AssetCollectionService {
     private final AssetCollectionTaskRepository taskRepository;
     private final AssetCollectionResultRepository resultRepository;
     private final ProbeRegistry probeRegistry;
-    private final ProbeWritebackService writebackService;
-    private final DeviceTypeRuleEngine ruleEngine;
+    private final CollectionTaskExecutor taskExecutor;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -46,112 +41,48 @@ public class AssetCollectionServiceImpl implements AssetCollectionService {
 
         TaskPreset preset = req.getPreset() != null ? req.getPreset() : TaskPreset.CAMERA_PRESET;
 
-        // Persist enabled plugins list as JSON
         String enabledPluginsJson = null;
         if (req.getEnabledPlugins() != null && !req.getEnabledPlugins().isEmpty()) {
             try { enabledPluginsJson = objectMapper.writeValueAsString(req.getEnabledPlugins()); }
             catch (Exception ignored) {}
         }
 
+        // Resolve ports now so async thread doesn't need to re-read request
+        List<Integer> ports = (req.getPorts() != null && !req.getPorts().isEmpty())
+                ? req.getPorts()
+                : probeRegistry.resolveDefaultPorts(preset);
+
+        int timeoutMs = req.getTimeoutMillis() != null ? req.getTimeoutMillis() : 2000;
+
         var task = new AssetCollectionTask();
         task.setAssetId(assetId);
         task.setTaskType(CollectionTaskType.PLUGIN_PROBE);
         task.setPreset(preset);
         task.setEnabledPlugins(enabledPluginsJson);
-        task.setStatus(CollectionTaskStatus.RUNNING);
+        task.setStatus(CollectionTaskStatus.PENDING);
         task.setTriggerType(TriggerType.MANUAL);
-        task.setStartedAt(LocalDateTime.now());
+        task.setSummary("任务已创建，等待执行");
         task = taskRepository.save(task);
 
-        // Resolve ports (request overrides preset defaults)
-        List<Integer> ports;
-        if (req.getPorts() != null && !req.getPorts().isEmpty()) {
-            ports = req.getPorts();
-        } else {
-            ports = probeRegistry.resolveDefaultPorts(preset);
-        }
+        // Capture finals for lambda; trigger async AFTER this transaction commits
+        // so the task row is guaranteed to exist in DB when the async thread reads it.
+        final Long taskId = task.getId();
+        final String targetIp = asset.getIp();
+        final List<Integer> resolvedPorts = ports;
+        final int resolvedTimeout = timeoutMs;
+        final TaskPreset resolvedPreset = preset;
+        final List<String> enabledPluginNames = req.getEnabledPlugins();
 
-        int timeoutMs = req.getTimeoutMillis() != null ? req.getTimeoutMillis() : 2000;
-
-        // Resolve plugins
-        List<ProbePlugin> plugins = probeRegistry.resolvePlugins(preset, req.getEnabledPlugins());
-        if (plugins.isEmpty()) {
-            log.warn("No plugins resolved for preset={}, falling back to port+http", preset);
-            plugins = probeRegistry.resolvePlugins(TaskPreset.CUSTOM,
-                    List.of("port-probe", "http-fingerprint"));
-        }
-
-        try {
-            // Build context (config can carry per-plugin settings)
-            ProbeContext ctx = new ProbeContext(assetId, task.getId(), asset.getIp(),
-                    ports, timeoutMs, preset, Map.of());
-
-            // Execute plugins
-            List<ProbeResult> allResults = new ArrayList<>();
-            for (ProbePlugin plugin : plugins) {
-                if (!plugin.supports(ctx)) continue;
-                try {
-                    List<ProbeResult> results = plugin.execute(ctx);
-                    allResults.addAll(results);
-                    log.debug("Plugin {} produced {} results", plugin.getName(), results.size());
-                } catch (Exception e) {
-                    log.error("Plugin {} failed: {}", plugin.getName(), e.getMessage(), e);
-                }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                taskExecutor.executeAsync(assetId, taskId, targetIp,
+                        resolvedPorts, resolvedTimeout, resolvedPreset, enabledPluginNames);
             }
+        });
 
-            // Persist raw results + fingerprints + device profile + evidences
-            writebackService.processResults(assetId, task.getId(), allResults);
-
-            // Run device-type rules engine → generates inference candidates
-            List<CategoryDetectionResult> detections = ruleEngine.detect(assetId, allResults);
-
-            // Build human-readable summary
-            String summary = buildSummary(allResults, detections, plugins);
-
-            task.setStatus(CollectionTaskStatus.SUCCESS);
-            task.setFinishedAt(LocalDateTime.now());
-            task.setSuccess(true);
-            task.setSummary(summary);
-            task.setWritebackApplied(true);
-
-        } catch (Exception e) {
-            log.error("采集任务执行失败 assetId={}", assetId, e);
-            task.setStatus(CollectionTaskStatus.FAILED);
-            task.setFinishedAt(LocalDateTime.now());
-            task.setSuccess(false);
-            task.setErrorMessage(e.getMessage());
-        }
-
-        task = taskRepository.save(task);
-        return new CollectionTaskResponse(task, resultRepository.countByTaskId(task.getId()));
-    }
-
-    private String buildSummary(List<ProbeResult> results,
-                                 List<CategoryDetectionResult> detections,
-                                 List<ProbePlugin> plugins) {
-        long openPorts = results.stream()
-                .filter(r -> r.getProbeType() == ProbeType.PORT_SCAN && r.isPortOpen()).count();
-        List<Integer> openPortNums = results.stream()
-                .filter(r -> r.getProbeType() == ProbeType.PORT_SCAN && r.isPortOpen() && r.getTargetPort() != null)
-                .map(ProbeResult::getTargetPort).sorted().collect(Collectors.toList());
-
-        long rtspOk  = results.stream().filter(r -> r.getProbeType() == ProbeType.RTSP_PROBE && r.isSuccess()).count();
-        long onvifOk = results.stream().filter(r -> r.getProbeType() == ProbeType.ONVIF_PROBE && r.isSuccess()).count();
-        long snmpOk  = results.stream().filter(r -> r.getProbeType() == ProbeType.SNMP_PROBE && r.isSuccess()).count();
-
-        StringBuilder sb = new StringBuilder();
-        sb.append(String.format("插件 %d 个执行完毕。", plugins.size()));
-        sb.append(String.format("开放端口 %d 个: %s。", openPorts, openPortNums));
-        if (rtspOk  > 0) sb.append(String.format("RTSP 探测成功 %d 次。", rtspOk));
-        if (onvifOk > 0) sb.append(String.format("ONVIF 探测成功 %d 次。", onvifOk));
-        if (snmpOk  > 0) sb.append(String.format("SNMP 探测成功 %d 次。", snmpOk));
-        if (!detections.isEmpty()) {
-            String cats = detections.stream()
-                    .map(d -> d.getCategory() + "(" + d.getConfidence() + ")")
-                    .collect(Collectors.joining(", "));
-            sb.append(String.format("规则引擎推断设备类别: %s。", cats));
-        }
-        return sb.toString().trim();
+        log.info("采集任务已创建 taskId={} assetId={} preset={}", taskId, assetId, preset);
+        return new CollectionTaskResponse(task, 0L);
     }
 
     @Override
