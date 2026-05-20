@@ -11,4 +11,10 @@ public interface AssetInferenceCandidateRepository extends JpaRepository<AssetIn
     List<AssetInferenceCandidate> findByAssetIdOrderByConfidenceDesc(Long assetId);
 
     Optional<AssetInferenceCandidate> findByIdAndAssetId(Long id, Long assetId);
+
+    Optional<AssetInferenceCandidate> findByAssetIdAndFieldNameAndCandidateValue(
+            Long assetId, String fieldName, String candidateValue);
+
+    List<AssetInferenceCandidate> findByAssetIdAndFieldNameOrderByConfidenceDesc(
+            Long assetId, String fieldName);
 }

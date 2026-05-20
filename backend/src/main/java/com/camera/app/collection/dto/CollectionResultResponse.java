@@ -20,8 +20,11 @@ public class CollectionResultResponse {
     @Schema(description = "资产 ID")
     private final Long assetId;
 
-    @Schema(description = "探测类型: PORT_SCAN / HTTP_TITLE / BANNER")
+    @Schema(description = "探测类型: PORT_SCAN / HTTP_TITLE / RTSP_PROBE / ONVIF_PROBE / WEB_FINGERPRINT / SNMP_PROBE / SSH_BANNER / TELNET_BANNER / UPNP_PROBE")
     private final ProbeType probeType;
+
+    @Schema(description = "产生本条结果的插件名称")
+    private final String pluginName;
 
     @Schema(description = "本次探测是否成功")
     private final boolean success;
@@ -55,6 +58,7 @@ public class CollectionResultResponse {
         this.taskId = r.getTaskId();
         this.assetId = r.getAssetId();
         this.probeType = r.getProbeType();
+        this.pluginName = r.getPluginName();
         this.success = r.isSuccess();
         this.targetHost = r.getTargetHost();
         this.targetPort = r.getTargetPort();

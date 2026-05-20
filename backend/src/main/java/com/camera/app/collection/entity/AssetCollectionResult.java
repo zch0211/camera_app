@@ -28,6 +28,12 @@ public class AssetCollectionResult {
     @Column(name = "probe_type", nullable = false, columnDefinition = "varchar(32)")
     private ProbeType probeType;
 
+    @Column(name = "plugin_name", length = 64)
+    private String pluginName;
+
+    @Column(precision = 4, scale = 3)
+    private java.math.BigDecimal confidence = java.math.BigDecimal.ZERO;
+
     @Column(nullable = false)
     private boolean success = false;
 

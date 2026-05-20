@@ -1,5 +1,6 @@
 package com.camera.app.collection.entity;
 
+import com.camera.app.collection.entity.TaskPreset;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,6 +25,13 @@ public class AssetCollectionTask {
     @Enumerated(EnumType.STRING)
     @Column(name = "task_type", nullable = false, columnDefinition = "varchar(32)")
     private CollectionTaskType taskType = CollectionTaskType.LIGHTWEIGHT_PROBE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "varchar(32)")
+    private TaskPreset preset = TaskPreset.CUSTOM;
+
+    @Column(name = "enabled_plugins", columnDefinition = "TEXT")
+    private String enabledPlugins;   // JSON array of plugin names, null = all resolved by preset
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "varchar(32)")

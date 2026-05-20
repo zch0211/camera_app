@@ -112,7 +112,7 @@ public class LightweightProbeService {
 
     // ---------- port probe ----------
 
-    private PortResult probePort(String host, int port, int timeoutMs) {
+    public PortResult probePort(String host, int port, int timeoutMs) {
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(host, port), timeoutMs);
             String banner = tryReadBanner(socket);
@@ -138,7 +138,7 @@ public class LightweightProbeService {
 
     // ---------- HTTP probe ----------
 
-    private HttpResult probeHttp(String host, int port, int timeoutMs) {
+    public HttpResult probeHttp(String host, int port, int timeoutMs) {
         String url = "http://" + host + ":" + port + "/";
         try {
             HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
@@ -160,7 +160,7 @@ public class LightweightProbeService {
         }
     }
 
-    private HttpResult probeHttps(String host, int port, int timeoutMs) {
+    public HttpResult probeHttps(String host, int port, int timeoutMs) {
         String url = "https://" + host + ":" + port + "/";
         try {
             HttpsURLConnection conn = (HttpsURLConnection) new URL(url).openConnection();

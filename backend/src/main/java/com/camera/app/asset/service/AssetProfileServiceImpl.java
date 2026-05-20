@@ -11,6 +11,7 @@ import com.camera.app.asset.repository.AssetRepository;
 import com.camera.app.asset.repository.AssetServiceFingerprintRepository;
 import com.camera.app.asset.repository.AssetTechnicalProfileRepository;
 import com.camera.app.asset.util.TechnicalProfileConverter;
+import com.camera.app.collection.dto.DeviceTypeDetectionResponse;
 import com.camera.app.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,10 @@ public class AssetProfileServiceImpl implements AssetProfileService {
         var candidates = candidateRepository.findByAssetIdOrderByConfidenceDesc(assetId)
                 .stream().map(InferenceCandidateResponse::new).toList();
 
+        var deviceTypeDetections = candidateRepository
+                .findByAssetIdAndFieldNameOrderByConfidenceDesc(assetId, "deviceCategory")
+                .stream().map(DeviceTypeDetectionResponse::new).toList();
+
         var evidences = evidenceRepository.findByAssetIdOrderByCollectedAtDesc(assetId)
                 .stream().map(EvidenceResponse::new).toList();
 
@@ -55,7 +60,7 @@ public class AssetProfileServiceImpl implements AssetProfileService {
         var kgPlaceholder = new AssetProfileResponse.KnowledgeEnhancementPlaceholder(
                 false, "知识图谱增强将在后续版本中自动填充，当前可通过 /api/v1/kg/assets/{id}/enrich 手动查询");
 
-        return new AssetProfileResponse(basicInfo, techResponse, missingFields, candidates, evidences, fingerprints, kgPlaceholder);
+        return new AssetProfileResponse(basicInfo, techResponse, missingFields, candidates, deviceTypeDetections, evidences, fingerprints, kgPlaceholder);
     }
 
     @Override

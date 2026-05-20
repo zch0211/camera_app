@@ -1,5 +1,6 @@
 package com.camera.app.asset.dto;
 
+import com.camera.app.collection.dto.DeviceTypeDetectionResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,6 +23,9 @@ public class AssetProfileResponse {
 
     @Schema(description = "候选推断结果列表，按置信度降序")
     private final List<InferenceCandidateResponse> inferenceCandidates;
+
+    @Schema(description = "规则引擎推断的设备类别列表，按置信度降序（fieldName=deviceCategory 的候选子集）")
+    private final List<DeviceTypeDetectionResponse> deviceTypeDetections;
 
     @Schema(description = "证据来源列表，按采集时间降序")
     private final List<EvidenceResponse> evidences;

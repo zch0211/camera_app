@@ -3,6 +3,7 @@ package com.camera.app.collection.dto;
 import com.camera.app.collection.entity.AssetCollectionTask;
 import com.camera.app.collection.entity.CollectionTaskStatus;
 import com.camera.app.collection.entity.CollectionTaskType;
+import com.camera.app.collection.entity.TaskPreset;
 import com.camera.app.collection.entity.TriggerType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
@@ -21,6 +22,12 @@ public class CollectionTaskResponse {
 
     @Schema(description = "任务类型")
     private final CollectionTaskType taskType;
+
+    @Schema(description = "探测预设: CAMERA_PRESET / NVR_PRESET / ROUTER_PRESET / FULL_PRESET / CUSTOM")
+    private final TaskPreset preset;
+
+    @Schema(description = "启用的插件名称（JSON 数组字符串，null 表示由预设决定）")
+    private final String enabledPlugins;
 
     @Schema(description = "任务状态: PENDING / RUNNING / SUCCESS / FAILED")
     private final CollectionTaskStatus status;
@@ -59,6 +66,8 @@ public class CollectionTaskResponse {
         this.id = t.getId();
         this.assetId = t.getAssetId();
         this.taskType = t.getTaskType();
+        this.preset = t.getPreset();
+        this.enabledPlugins = t.getEnabledPlugins();
         this.status = t.getStatus();
         this.triggerType = t.getTriggerType();
         this.startedAt = t.getStartedAt();
