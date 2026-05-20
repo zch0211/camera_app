@@ -12,7 +12,11 @@ import com.camera.app.asset.repository.AssetServiceFingerprintRepository;
 import com.camera.app.asset.repository.AssetTechnicalProfileRepository;
 import com.camera.app.asset.util.TechnicalProfileConverter;
 import com.camera.app.collection.dto.DeviceTypeDetectionResponse;
+import com.camera.app.collection.entity.AssetCollectionResult;
+import com.camera.app.collection.entity.ProbeType;
+import com.camera.app.collection.repository.AssetCollectionResultRepository;
 import com.camera.app.common.exception.BusinessException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,18 +24,32 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class AssetProfileServiceImpl implements AssetProfileService {
 
+    private static final List<Map.Entry<String, ProbeType>> PROTOCOL_PROBE_ENTRIES = List.of(
+            Map.entry("ONVIF", ProbeType.ONVIF_PROBE),
+            Map.entry("RTSP", ProbeType.RTSP_PROBE),
+            Map.entry("SNMP", ProbeType.SNMP_PROBE),
+            Map.entry("SSH", ProbeType.SSH_BANNER),
+            Map.entry("TELNET", ProbeType.TELNET_BANNER),
+            Map.entry("UPNP", ProbeType.UPNP_PROBE)
+    );
+
     private final AssetRepository assetRepository;
     private final AssetTechnicalProfileRepository technicalProfileRepository;
     private final AssetInferenceCandidateRepository candidateRepository;
     private final AssetEvidenceRepository evidenceRepository;
     private final AssetServiceFingerprintRepository fingerprintRepository;
+    private final AssetCollectionResultRepository collectionResultRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -57,10 +75,12 @@ public class AssetProfileServiceImpl implements AssetProfileService {
 
         var missingFields = computeMissingFields(basicInfo, techResponse);
 
+        var protocolCapabilities = buildProtocolCapabilities(assetId);
+
         var kgPlaceholder = new AssetProfileResponse.KnowledgeEnhancementPlaceholder(
                 false, "知识图谱增强将在后续版本中自动填充，当前可通过 /api/v1/kg/assets/{id}/enrich 手动查询");
 
-        return new AssetProfileResponse(basicInfo, techResponse, missingFields, candidates, deviceTypeDetections, evidences, fingerprints, kgPlaceholder);
+        return new AssetProfileResponse(basicInfo, techResponse, missingFields, candidates, deviceTypeDetections, evidences, fingerprints, protocolCapabilities, kgPlaceholder);
     }
 
     @Override
@@ -253,6 +273,95 @@ public class AssetProfileServiceImpl implements AssetProfileService {
         if (req.getNote() != null) {
             e.setNote(req.getNote());
         }
+    }
+
+    private List<ProtocolCapabilityResponse> buildProtocolCapabilities(Long assetId) {
+        var allResults = collectionResultRepository.findByAssetIdOrderByCollectedAtDesc(assetId);
+        var resultsByType = allResults.stream()
+                .collect(Collectors.groupingBy(AssetCollectionResult::getProbeType));
+
+        List<ProtocolCapabilityResponse> capabilities = new ArrayList<>();
+        for (var entry : PROTOCOL_PROBE_ENTRIES) {
+            String protocol = entry.getKey();
+            ProbeType probeType = entry.getValue();
+            var results = resultsByType.getOrDefault(probeType, List.of());
+            capabilities.add(aggregateProtocol(protocol, results));
+        }
+        // WS_DISCOVERY has no probe type yet — always UNDETECTED
+        capabilities.add(undetected("WS_DISCOVERY"));
+        return capabilities;
+    }
+
+    private ProtocolCapabilityResponse aggregateProtocol(String protocol, List<AssetCollectionResult> results) {
+        if (results.isEmpty()) {
+            return undetected(protocol);
+        }
+        var successResult = results.stream().filter(AssetCollectionResult::isSuccess).findFirst();
+        if (successResult.isPresent()) {
+            return buildSupported(protocol, successResult.get());
+        }
+        return buildFailed(protocol, results.get(0));
+    }
+
+    private ProtocolCapabilityResponse buildSupported(String protocol, AssetCollectionResult result) {
+        if ("ONVIF".equals(protocol)) {
+            return buildOnvifCapability(result);
+        }
+        return ProtocolCapabilityResponse.builder()
+                .protocol(protocol)
+                .status("SUPPORTED")
+                .supported(true)
+                .summary("协议支持，服务可达")
+                .lastDetectedAt(result.getCollectedAt())
+                .sourceTaskId(result.getTaskId())
+                .port(result.getTargetPort())
+                .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private ProtocolCapabilityResponse buildOnvifCapability(AssetCollectionResult result) {
+        boolean authRequired = false;
+        Map<String, Object> details = new HashMap<>();
+        if (result.getParsedData() != null) {
+            try {
+                Map<String, Object> parsed = objectMapper.readValue(result.getParsedData(), Map.class);
+                details.putAll(parsed);
+                authRequired = Boolean.TRUE.equals(parsed.get("authRequired"));
+            } catch (Exception ignored) {}
+        }
+        String status = authRequired ? "AUTH_REQUIRED" : "SUPPORTED";
+        String summary = authRequired ? "设备服务可达，需认证" : "ONVIF 服务可达";
+        return ProtocolCapabilityResponse.builder()
+                .protocol("ONVIF")
+                .status(status)
+                .supported(true)
+                .summary(summary)
+                .lastDetectedAt(result.getCollectedAt())
+                .sourceTaskId(result.getTaskId())
+                .port(result.getTargetPort())
+                .details(details.isEmpty() ? null : details)
+                .build();
+    }
+
+    private ProtocolCapabilityResponse buildFailed(String protocol, AssetCollectionResult result) {
+        return ProtocolCapabilityResponse.builder()
+                .protocol(protocol)
+                .status("FAILED")
+                .supported(false)
+                .summary("探测失败")
+                .lastDetectedAt(result.getCollectedAt())
+                .sourceTaskId(result.getTaskId())
+                .port(result.getTargetPort())
+                .build();
+    }
+
+    private ProtocolCapabilityResponse undetected(String protocol) {
+        return ProtocolCapabilityResponse.builder()
+                .protocol(protocol)
+                .status("UNDETECTED")
+                .supported(false)
+                .summary("尚未探测")
+                .build();
     }
 
     private List<String> computeMissingFields(AssetResponse basic, TechnicalProfileResponse tech) {

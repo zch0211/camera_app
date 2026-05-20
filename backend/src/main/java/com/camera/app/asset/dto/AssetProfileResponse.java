@@ -33,6 +33,9 @@ public class AssetProfileResponse {
     @Schema(description = "端口/服务识别结果列表，按端口升序；每条记录对应一个端口的最新探测结果")
     private final List<ServiceFingerprintResponse> serviceFingerprints;
 
+    @Schema(description = "协议能力聚合列表；固定返回 ONVIF/RTSP/SNMP/SSH/TELNET/UPNP/WS_DISCOVERY，未探测的状态为 UNDETECTED")
+    private final List<ProtocolCapabilityResponse> protocolCapabilities;
+
     @Schema(description = "知识图谱增强占位（后续版本填充）")
     private final KnowledgeEnhancementPlaceholder knowledgeEnhancement;
 

@@ -66,6 +66,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\ServiceFingerp
 D:\code\camera_app\backend\src\main\java\com\camera\app\CameraAppApplication.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\plugin\impl\SnmpProbePlugin.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\controller\AssetProfileController.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\ProtocolCapabilityResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\controller\KgController.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\rules\DeviceCategory.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\dto\VulnHintItem.java
