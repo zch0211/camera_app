@@ -18,6 +18,7 @@ import com.camera.app.collection.repository.AssetCollectionResultRepository;
 import com.camera.app.common.exception.BusinessException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -25,10 +26,13 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -59,6 +63,9 @@ public class AssetProfileServiceImpl implements AssetProfileService {
 
         var technicalProfile = technicalProfileRepository.findByAssetId(assetId).orElse(null);
         var techResponse = technicalProfile != null ? new TechnicalProfileResponse(technicalProfile) : null;
+        var knownProtocols = technicalProfile != null
+                ? TechnicalProfileConverter.parseProtocols(technicalProfile.getProtocols())
+                : List.<String>of();
 
         var candidates = candidateRepository.findByAssetIdOrderByConfidenceDesc(assetId)
                 .stream().map(InferenceCandidateResponse::new).toList();
@@ -75,7 +82,7 @@ public class AssetProfileServiceImpl implements AssetProfileService {
 
         var missingFields = computeMissingFields(basicInfo, techResponse);
 
-        var protocolCapabilities = buildProtocolCapabilities(assetId);
+        var protocolCapabilities = buildProtocolCapabilities(assetId, fingerprints, knownProtocols);
 
         var kgPlaceholder = new AssetProfileResponse.KnowledgeEnhancementPlaceholder(
                 false, "知识图谱增强将在后续版本中自动填充，当前可通过 /api/v1/kg/assets/{id}/enrich 手动查询");
@@ -275,43 +282,105 @@ public class AssetProfileServiceImpl implements AssetProfileService {
         }
     }
 
-    private List<ProtocolCapabilityResponse> buildProtocolCapabilities(Long assetId) {
+    // ── protocolCapabilities 三层聚合 ────────────────────────────────────────
+
+    private List<ProtocolCapabilityResponse> buildProtocolCapabilities(
+            Long assetId,
+            List<ServiceFingerprintResponse> fingerprints,
+            List<String> knownProtocols) {
+
+        // P1: asset_collection_results（按 probeType 精确匹配）
         var allResults = collectionResultRepository.findByAssetIdOrderByCollectedAtDesc(assetId);
+        log.debug("协议能力聚合 assetId={} collectionResults={}", assetId, allResults.size());
         var resultsByType = allResults.stream()
                 .collect(Collectors.groupingBy(AssetCollectionResult::getProbeType));
 
+        // P2: serviceFingerprints（applicationProtocol 统一大写匹配）
+        // UPnP 插件写 "UPnP"，TELNET 插件写 "TELNET"，统一 toUpperCase 后与协议名对齐
+        Map<String, ServiceFingerprintResponse> fpByProto = new HashMap<>();
+        for (ServiceFingerprintResponse fp : fingerprints) {
+            String proto = fp.getApplicationProtocol();
+            if (proto == null || "UNKNOWN".equalsIgnoreCase(proto)) continue;
+            String key = proto.toUpperCase();
+            // 同一协议有多条指纹时，优先保留 OPEN 状态
+            fpByProto.merge(key, fp, (existing, neu) ->
+                    "OPEN".equals(existing.getStatus()) ? existing : neu);
+        }
+
+        // P3: technicalFeatures.protocols（大写匹配）
+        Set<String> techProtos = new HashSet<>();
+        for (String p : knownProtocols) {
+            if (p != null && !p.isBlank()) techProtos.add(p.toUpperCase());
+        }
+
         List<ProtocolCapabilityResponse> capabilities = new ArrayList<>();
         for (var entry : PROTOCOL_PROBE_ENTRIES) {
-            String protocol = entry.getKey();
-            ProbeType probeType = entry.getValue();
-            var results = resultsByType.getOrDefault(probeType, List.of());
-            capabilities.add(aggregateProtocol(protocol, results));
+            capabilities.add(resolveCapability(
+                    entry.getKey(), entry.getValue(),
+                    resultsByType, fpByProto, techProtos));
         }
-        // WS_DISCOVERY has no probe type yet — always UNDETECTED
-        capabilities.add(undetected("WS_DISCOVERY"));
+        // WS_DISCOVERY 暂无 ProbeType，永远走三级查找
+        capabilities.add(resolveCapability("WS_DISCOVERY", null, resultsByType, fpByProto, techProtos));
         return capabilities;
     }
 
-    private ProtocolCapabilityResponse aggregateProtocol(String protocol, List<AssetCollectionResult> results) {
-        if (results.isEmpty()) {
-            return undetected(protocol);
+    private ProtocolCapabilityResponse resolveCapability(
+            String protocol, ProbeType probeType,
+            Map<ProbeType, List<AssetCollectionResult>> resultsByType,
+            Map<String, ServiceFingerprintResponse> fpByProto,
+            Set<String> techProtos) {
+
+        // P1: 有采集结果记录（不管成功/失败）
+        if (probeType != null) {
+            var results = resultsByType.getOrDefault(probeType, List.of());
+            if (!results.isEmpty()) {
+                var successResult = results.stream().filter(AssetCollectionResult::isSuccess).findFirst();
+                if (successResult.isPresent()) {
+                    return buildFromResult(protocol, successResult.get());
+                }
+                // 有记录但全失败
+                return buildFailed(protocol, results.get(0));
+            }
         }
-        var successResult = results.stream().filter(AssetCollectionResult::isSuccess).findFirst();
-        if (successResult.isPresent()) {
-            return buildSupported(protocol, successResult.get());
+
+        // P2: serviceFingerprints 中匹配到开放的协议端口
+        ServiceFingerprintResponse fp = fpByProto.get(protocol.toUpperCase());
+        if (fp != null && "OPEN".equals(fp.getStatus())) {
+            log.debug("协议 {} 来自 serviceFingerprints port={}", protocol, fp.getPort());
+            return ProtocolCapabilityResponse.builder()
+                    .protocol(protocol)
+                    .status("SUPPORTED")
+                    .supported(true)
+                    .summary(fpSummary(protocol))
+                    .lastDetectedAt(fp.getLastCollectedAt())
+                    .sourceTaskId(fp.getLastTaskId())
+                    .port(fp.getPort())
+                    .build();
         }
-        return buildFailed(protocol, results.get(0));
+
+        // P3: technicalFeatures.protocols 中有该协议名
+        if (techProtos.contains(protocol.toUpperCase())) {
+            log.debug("协议 {} 来自 technicalFeatures.protocols", protocol);
+            return ProtocolCapabilityResponse.builder()
+                    .protocol(protocol)
+                    .status("SUPPORTED")
+                    .supported(true)
+                    .summary("技术特征已记录该协议支持")
+                    .build();
+        }
+
+        return undetected(protocol);
     }
 
-    private ProtocolCapabilityResponse buildSupported(String protocol, AssetCollectionResult result) {
+    private ProtocolCapabilityResponse buildFromResult(String protocol, AssetCollectionResult result) {
         if ("ONVIF".equals(protocol)) {
-            return buildOnvifCapability(result);
+            return buildOnvifFromResult(result);
         }
         return ProtocolCapabilityResponse.builder()
                 .protocol(protocol)
                 .status("SUPPORTED")
                 .supported(true)
-                .summary("协议支持，服务可达")
+                .summary(successSummary(protocol))
                 .lastDetectedAt(result.getCollectedAt())
                 .sourceTaskId(result.getTaskId())
                 .port(result.getTargetPort())
@@ -319,7 +388,7 @@ public class AssetProfileServiceImpl implements AssetProfileService {
     }
 
     @SuppressWarnings("unchecked")
-    private ProtocolCapabilityResponse buildOnvifCapability(AssetCollectionResult result) {
+    private ProtocolCapabilityResponse buildOnvifFromResult(AssetCollectionResult result) {
         boolean authRequired = false;
         Map<String, Object> details = new HashMap<>();
         if (result.getParsedData() != null) {
@@ -329,13 +398,11 @@ public class AssetProfileServiceImpl implements AssetProfileService {
                 authRequired = Boolean.TRUE.equals(parsed.get("authRequired"));
             } catch (Exception ignored) {}
         }
-        String status = authRequired ? "AUTH_REQUIRED" : "SUPPORTED";
-        String summary = authRequired ? "设备服务可达，需认证" : "ONVIF 服务可达";
         return ProtocolCapabilityResponse.builder()
                 .protocol("ONVIF")
-                .status(status)
+                .status(authRequired ? "AUTH_REQUIRED" : "SUPPORTED")
                 .supported(true)
-                .summary(summary)
+                .summary(authRequired ? "设备服务可达，需认证" : "ONVIF 服务可达")
                 .lastDetectedAt(result.getCollectedAt())
                 .sourceTaskId(result.getTaskId())
                 .port(result.getTargetPort())
@@ -362,6 +429,29 @@ public class AssetProfileServiceImpl implements AssetProfileService {
                 .supported(false)
                 .summary("尚未探测")
                 .build();
+    }
+
+    private String successSummary(String protocol) {
+        return switch (protocol) {
+            case "RTSP"   -> "RTSP 服务可达";
+            case "SNMP"   -> "SNMP 响应正常";
+            case "SSH"    -> "SSH 服务可达";
+            case "TELNET" -> "Telnet 服务可达";
+            case "UPNP"   -> "UPnP 设备响应";
+            default       -> "协议支持，服务可达";
+        };
+    }
+
+    private String fpSummary(String protocol) {
+        return switch (protocol) {
+            case "ONVIF"  -> "服务指纹发现 ONVIF 端口，服务可达";
+            case "RTSP"   -> "服务指纹发现 RTSP 端口，服务可达";
+            case "SNMP"   -> "服务指纹发现 SNMP 端口，服务可达";
+            case "SSH"    -> "服务指纹发现 SSH 端口，服务可达";
+            case "TELNET" -> "服务指纹发现 Telnet 端口，服务可达";
+            case "UPNP"   -> "服务指纹发现 UPnP 端口，服务可达";
+            default       -> "服务指纹确认协议可达";
+        };
     }
 
     private List<String> computeMissingFields(AssetResponse basic, TechnicalProfileResponse tech) {

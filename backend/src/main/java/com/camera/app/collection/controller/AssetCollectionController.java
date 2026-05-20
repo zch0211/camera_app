@@ -28,14 +28,15 @@ public class AssetCollectionController {
     private final AssetCollectionService collectionService;
 
     @Operation(
-            summary = "发起采集任务（同步执行）",
-            description = "权限: ROLE_ADMIN / ROLE_OPERATOR。" +
-                    "对指定资产 IP 发起一次 LIGHTWEIGHT_PROBE 探测，包含：\n" +
+            summary = "发起采集任务（异步执行）",
+            description = "权限: ROLE_ADMIN / ROLE_OPERATOR。\n" +
+                    "立即返回任务信息（status=PENDING），后台异步执行探测流程：\n" +
                     "1. 端口可达性探测（TCP connect）\n" +
                     "2. HTTP/HTTPS 页面标题与 Server 响应头抓取\n" +
-                    "3. TCP Banner 读取（适用于会主动发送 Banner 的服务）\n\n" +
-                    "采集完成后自动写回 AssetTechnicalProfile（openPorts / protocols / webTitle / vendorHint / lastFingerprintAt）" +
-                    "并生成 AssetEvidence 记录。接口同步返回任务结果，请注意请求可能需要数秒完成（取决于端口数量与超时设置）。"
+                    "3. RTSP / ONVIF / SNMP / SSH / Telnet / UPnP 协议探测\n\n" +
+                    "任务状态流转：PENDING → RUNNING → SUCCESS / FAILED。\n" +
+                    "请通过 GET /collection-tasks/{taskId} 轮询任务状态，或通过 GET /collection-tasks/{taskId}/results 查看原始结果。\n" +
+                    "采集完成后自动写回 AssetTechnicalProfile 并生成 AssetEvidence 记录。"
     )
     @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
     @PostMapping
