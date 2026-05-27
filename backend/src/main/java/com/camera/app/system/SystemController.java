@@ -5,6 +5,10 @@ import com.camera.app.collection.entity.CollectionTaskStatus;
 import com.camera.app.collection.entity.CollectionTaskType;
 import com.camera.app.collection.entity.ProbeType;
 import com.camera.app.common.response.ApiResponse;
+import com.camera.app.discovery.entity.DiscoveryPreset;
+import com.camera.app.discovery.entity.DiscoverySourceType;
+import com.camera.app.discovery.entity.DiscoveryStatus;
+import com.camera.app.discovery.entity.DiscoveryTaskType;
 import com.camera.app.poc.entity.Language;
 import com.camera.app.poc.entity.PocStatus;
 import com.camera.app.poc.entity.Protocol;
@@ -56,6 +60,10 @@ public class SystemController {
         result.put("collectionTaskTypes",    Arrays.stream(CollectionTaskType.values()).map(Enum::name).toList());
         result.put("collectionTaskStatuses", Arrays.stream(CollectionTaskStatus.values()).map(Enum::name).toList());
         result.put("collectionProbeTypes",   Arrays.stream(ProbeType.values()).map(Enum::name).toList());
+        result.put("discoveryTaskTypes",     Arrays.stream(DiscoveryTaskType.values()).map(Enum::name).toList());
+        result.put("discoveryStatuses",      Arrays.stream(DiscoveryStatus.values()).map(Enum::name).toList());
+        result.put("discoveryPresets",       Arrays.stream(DiscoveryPreset.values()).map(Enum::name).toList());
+        result.put("discoverySourceTypes",   Arrays.stream(DiscoverySourceType.values()).map(Enum::name).toList());
         return ApiResponse.ok(result);
     }
 }
