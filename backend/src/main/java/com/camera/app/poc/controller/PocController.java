@@ -164,20 +164,28 @@ public class PocController {
     // ─── 执行模板 ──────────────────────────────────────────────────────────────
 
     @Operation(
-            summary = "获取 POC 执行模板",
+            summary = "获取 POC 执行模板（v2 动作驱动）",
             description = """
                     权限: ROLE_ADMIN / ROLE_OPERATOR。
-                    返回该 POC 的结构化执行配置，前端据此动态渲染执行表单，无需了解命令行细节。
+                    返回该 POC 的结构化执行配置（schemaVersion=2），前端据此动态渲染执行表单。
 
-                    **返回说明**
-                    - executable=false：该 POC 当前不可执行（非 Python / 非 .py 文件），reason 说明原因
-                    - modes：支持的执行模式（CHECK=安全检测，EXPLOIT=漏洞利用）
-                    - paramSchemaByMode：各模式所需的 params 字段定义
-                      · CHECK  → 空列表（无额外参数）
-                      · EXPLOIT → [{ name:"cmd", type:"text", required:true }]，前端需采集 params.cmd
-                    - recommendedPorts：根据 POC 的 protocol / targetType 推导，供自动端口扫描使用
-                    - supportedTargetStrategies：EXPLICIT_PORT=显式端口，RECOMMENDED_PORT_SCAN=自动扫描
-                    - schemaVersion=1：本轮初始版本，后续演进时递增
+                    **v2 新增字段**
+                    - actions：动作列表，每个 action 含 key / label / category / outputType / riskLevel / defaultAction / params。
+                      · key：如 CHECK_VULN / EXEC_COMMAND / FETCH_SNAPSHOT / LIST_USERS / DOWNLOAD_CONFIG
+                      · category：VERIFY / READ / DOWNLOAD / INTERACT（前端分组展示）
+                      · outputType：BOOLEAN_TEXT / TEXT / JSON / IMAGE / FILE / MIXED（结果渲染类型）
+                      · params：该动作专属参数字段定义
+                    - 动作识别规则（Python 脚本）：扫描脚本 flags
+                      · --check → CHECK_VULN，--cmd → EXEC_COMMAND，--snapshot → FETCH_SNAPSHOT
+                      · --users → LIST_USERS，--config → DOWNLOAD_CONFIG
+                    - 识别不到 flag 时回退到 CHECK_VULN 兜底
+
+                    **v1 兼容字段**（旧前端仍可读取，新前端优先消费 actions）
+                    - modes / defaultMode / paramSchemaByMode 继续返回，不会消失
+
+                    **execute 请求变化**
+                    - 新增 actionKey 字段（优先于 mode），如 CHECK_VULN / EXEC_COMMAND 等
+                    - 旧 mode=CHECK / EXPLOIT 仍可用，系统自动映射到 CHECK_VULN / EXEC_COMMAND
                     """
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
@@ -194,31 +202,37 @@ public class PocController {
     // ─── 执行 POC ─────────────────────────────────────────────────────────────
 
     @Operation(
-            summary = "执行 POC 文件（受控本地子进程）",
+            summary = "执行 POC 文件（受控本地子进程，v2 动作驱动）",
             description = """
                     权限: ROLE_ADMIN / ROLE_OPERATOR。
 
-                    **结构化执行（推荐）**
-                    使用 mode / targetStrategy / port / assetId / params 字段：
-                    - mode：CHECK（默认，安全检测）或 EXPLOIT（高风险，漏洞利用）
-                    - targetStrategy：
-                      · EXPLICIT_PORT — 配合 port 字段显式指定端口，系统注入 -u http://ip:port
-                      · RECOMMENDED_PORT_SCAN — 系统自动 TCP 扫描 POC 推荐端口，选第一个可达端口注入
+                    **v2 动作驱动（推荐）**
+                    使用 actionKey / targetStrategy / port / assetId / params 字段：
+                    - actionKey：从 execution-schema actions[*].key 取值，如 CHECK_VULN / EXEC_COMMAND 等
+                    - targetStrategy：EXPLICIT_PORT（显式端口）或 RECOMMENDED_PORT_SCAN（自动扫描）
                     - port：显式端口（EXPLICIT_PORT 时使用）
                     - assetId：关联资产，自动注入目标 IP
-                    - params：模式专属参数 Map
-                      · mode=CHECK  → params 不需要任何字段；脚本 argv 追加 --check
-                      · mode=EXPLOIT → params.cmd 必填（缺失或为空返回 400）；脚本 argv 追加 --cmd <cmd>
+                    - params：动作专属参数 Map
+                      · CHECK_VULN  → 不需要额外参数；脚本 argv 追加 --check
+                      · EXEC_COMMAND → params.cmd 必填；脚本 argv 追加 --cmd <cmd>
+                      · FETCH_SNAPSHOT → 脚本 argv 追加 --snapshot；响应 outputType=IMAGE
+                      · LIST_USERS → 脚本 argv 追加 --users；响应 outputType=JSON
+                      · DOWNLOAD_CONFIG → 脚本 argv 追加 --config；响应 outputType=FILE
 
-                    **兼容执行（旧接口，仍可用）**
-                    使用 arguments / assetPort 字段，行为与之前一致。
+                    **v1 兼容（旧接口，仍可用）**
+                    - mode=CHECK 自动映射到 actionKey=CHECK_VULN
+                    - mode=EXPLOIT 自动映射到 actionKey=EXEC_COMMAND
+                    - arguments / assetPort 字段行为不变
+
+                    **响应变化（v2）**
+                    - 新增 actionKey / actionLabel / outputType 字段
+                    - 新增 artifacts 列表（当前为空列表，IMAGE/FILE 动作后续填充）
+                    - mode 保留为兼容字段
 
                     **执行边界**
                     - 仅支持 .py 文件（其余返回 executed=false）
                     - ProcessBuilder 数组模式，禁止 shell=true
-                    - 超时默认 10 秒，最大 30 秒
-                    - stdout / stderr 各限 64 KB，超出截断（truncated=true）
-                    - null 字节自动过滤；arguments 最多 20 个，每个不超过 1000 字符
+                    - 超时默认 10 秒，最大 30 秒；stdout / stderr 各限 64 KB
                     """
     )
     @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {

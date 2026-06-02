@@ -30,6 +30,12 @@ public class PocExecutionLog {
     @Column(columnDefinition = "varchar(32)")
     private ExecutionMode mode;
 
+    @Column(name = "action_key", length = 64)
+    private String actionKey;
+
+    @Column(name = "output_type", length = 32)
+    private String outputType;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "target_strategy", columnDefinition = "varchar(32)")
     private TargetStrategy targetStrategy;

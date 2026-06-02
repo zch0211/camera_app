@@ -15,6 +15,8 @@ public class PocExecutionLogResponse {
     private final Long assetId;
     private final String executedBy;
     private final ExecutionMode mode;
+    private final String actionKey;
+    private final String outputType;
     private final TargetStrategy targetStrategy;
     private final Integer finalPort;
     private final String usedTarget;
@@ -34,6 +36,8 @@ public class PocExecutionLogResponse {
         this.assetId = log.getAssetId();
         this.executedBy = log.getExecutedBy();
         this.mode = log.getMode();
+        this.actionKey = log.getActionKey();
+        this.outputType = log.getOutputType();
         this.targetStrategy = log.getTargetStrategy();
         this.finalPort = log.getFinalPort();
         this.usedTarget = log.getUsedTarget();

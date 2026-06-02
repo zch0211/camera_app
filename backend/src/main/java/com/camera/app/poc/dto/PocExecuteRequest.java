@@ -13,10 +13,17 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-@Schema(description = "POC 执行请求")
+@Schema(description = "POC 执行请求（v2：actionKey 驱动；v1 兼容：mode 驱动）")
 public class PocExecuteRequest {
 
-    @Schema(description = "执行模式：CHECK=安全检测（默认），EXPLOIT=漏洞利用（高风险）")
+    @Schema(description = """
+            【v2 推荐】执行动作 key，对应 execution-schema 中 actions[*].key，例如：
+            CHECK_VULN / EXEC_COMMAND / FETCH_SNAPSHOT / LIST_USERS / DOWNLOAD_CONFIG。
+            actionKey 与 mode 同时传入时，actionKey 优先。
+            """, example = "CHECK_VULN")
+    private String actionKey;
+
+    @Schema(description = "【v1 兼容】执行模式：CHECK=安全检测（默认），EXPLOIT=漏洞利用（高风险）；新请求请使用 actionKey")
     private ExecutionMode mode;
 
     @Schema(description = "目标策略：EXPLICIT_PORT=显式指定端口，RECOMMENDED_PORT_SCAN=自动扫描推荐端口列表")

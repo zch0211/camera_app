@@ -2,6 +2,9 @@ package com.camera.app.poc.service;
 
 import com.camera.app.asset.repository.AssetRepository;
 import com.camera.app.common.exception.BusinessException;
+import com.camera.app.poc.dto.ArtifactInfo;
+import com.camera.app.poc.dto.ParamField;
+import com.camera.app.poc.dto.PocAction;
 import com.camera.app.poc.dto.PocExecuteRequest;
 import com.camera.app.poc.dto.PocExecuteResponse;
 import com.camera.app.poc.dto.PocExecutionSchema;
@@ -11,8 +14,6 @@ import com.camera.app.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import com.camera.app.poc.dto.ParamField;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,6 +42,7 @@ public class PocExecutionServiceImpl implements PocExecutionService {
     private final FileStorageService fileStorageService;
     private final AssetRepository assetRepository;
     private final PocExecutionLogService pocExecutionLogService;
+    private final PocActionSchemaBuilder actionSchemaBuilder;
 
     private record ExecCtx(List<String> args, TargetStrategy targetStrategy,
                            Integer finalPort, String usedTarget) {}
@@ -51,45 +53,43 @@ public class PocExecutionServiceImpl implements PocExecutionService {
     public PocExecutionSchema getExecutionSchema(Long pocId) {
         Poc poc = findActivePoc(pocId);
 
-        boolean executable = poc.getLanguage() == Language.PYTHON
-                && poc.getOriginalFilename().toLowerCase().endsWith(".py");
-        String reason = null;
-        if (!executable) {
-            reason = poc.getLanguage() != Language.PYTHON
-                    ? "仅支持 Python 脚本执行" : "文件扩展名不是 .py";
-        }
-
+        boolean executable = isPythonPoc(poc);
+        String reason = executable ? null : notExecutableReason(poc);
         List<Integer> recommendedPorts = deriveRecommendedPorts(poc);
 
-        Map<String, List<ParamField>> paramSchemaByMode = Map.of(
-                "CHECK", List.of(),
-                "EXPLOIT", List.of(
-                        ParamField.builder()
-                                .name("cmd")
-                                .label("命令")
-                                .type("text")
-                                .required(true)
-                                .placeholder("请输入要执行的命令，如 whoami")
-                                .build()
-                )
-        );
+        // For Python POCs, try to read script content for action detection
+        String scriptContent = null;
+        if (executable && poc.getObjectKey() != null) {
+            try (InputStream is = fileStorageService.download(poc.getObjectKey())) {
+                scriptContent = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                log.warn("[Schema] Could not read script for action detection, pocId={}: {}", pocId, e.getMessage());
+            }
+        }
+
+        List<PocAction> actions = actionSchemaBuilder.buildActions(poc, scriptContent);
+
+        // v1 compat: derive paramSchemaByMode from action list
+        Map<String, List<ParamField>> compatParamSchema = buildCompatParamSchema(actions);
 
         return PocExecutionSchema.builder()
                 .pocId(pocId)
                 .language(poc.getLanguage() != null ? poc.getLanguage().name() : "UNKNOWN")
                 .executable(executable)
                 .reason(reason)
-                .modes(List.of(ExecutionMode.CHECK, ExecutionMode.EXPLOIT))
-                .defaultMode(ExecutionMode.CHECK)
+                .schemaVersion(2)
                 .defaultTimeoutSeconds(10)
                 .supportedTargetStrategies(
                         List.of(TargetStrategy.EXPLICIT_PORT, TargetStrategy.RECOMMENDED_PORT_SCAN))
                 .recommendedPorts(recommendedPorts)
                 .supportsExplicitPort(true)
                 .supportsAutoPortSuggestion(!recommendedPorts.isEmpty())
+                .actions(actions)
+                // v1 compat fields
+                .modes(List.of(ExecutionMode.CHECK, ExecutionMode.EXPLOIT))
+                .defaultMode(ExecutionMode.CHECK)
                 .highRisk(false)
-                .schemaVersion(1)
-                .paramSchemaByMode(paramSchemaByMode)
+                .paramSchemaByMode(compatParamSchema)
                 .build();
     }
 
@@ -99,18 +99,23 @@ public class PocExecutionServiceImpl implements PocExecutionService {
     public PocExecuteResponse execute(Long pocId, PocExecuteRequest request, String executedBy) {
         Poc poc = findActivePoc(pocId);
 
-        if (!poc.getOriginalFilename().toLowerCase().endsWith(".py")) {
+        if (!isPyFile(poc)) {
             return PocExecuteResponse.builder()
                     .pocId(pocId)
                     .executed(false)
-                    .mode(request.getMode())
                     .message("仅支持 .py 文件执行")
                     .build();
         }
 
-        ExecutionMode mode = request.getMode() != null ? request.getMode() : ExecutionMode.CHECK;
-        validateModeParams(mode, request);
-        ExecCtx ctx = buildExecCtx(request, poc, mode);
+        // Resolve action key: explicit actionKey > compat mode mapping > default CHECK_VULN
+        String actionKey = resolveActionKey(request);
+        validateActionParams(actionKey, request);
+
+        ExecCtx ctx = buildExecCtx(request, poc, actionKey);
+
+        String actionLabel = actionSchemaBuilder.getLabel(actionKey);
+        String outputType  = actionSchemaBuilder.getOutputType(actionKey);
+        ExecutionMode compatMode = toCompatMode(actionKey);
 
         // ── Dry-run: return resolved argv without running the script ──────────
         if (request.isDryRun()) {
@@ -118,13 +123,17 @@ public class PocExecutionServiceImpl implements PocExecutionService {
             previewCmd.add("python");
             previewCmd.add(poc.getOriginalFilename());
             previewCmd.addAll(ctx.args());
-            log.info("[POC-DRYRUN] pocId={} mode={} strategy={} assetId={} port={} target={} params={} argv={}",
-                    pocId, mode, ctx.targetStrategy(), request.getAssetId(),
+            log.info("[POC-DRYRUN] pocId={} actionKey={} strategy={} assetId={} port={} target={} params={} argv={}",
+                    pocId, actionKey, ctx.targetStrategy(), request.getAssetId(),
                     ctx.finalPort(), ctx.usedTarget(), request.getParams(), previewCmd);
             return PocExecuteResponse.builder()
                     .pocId(pocId)
                     .executed(false)
-                    .mode(mode)
+                    .actionKey(actionKey)
+                    .actionLabel(actionLabel)
+                    .outputType(outputType)
+                    .artifacts(List.of())
+                    .mode(compatMode)
                     .targetStrategy(ctx.targetStrategy())
                     .finalPort(ctx.finalPort())
                     .usedTarget(ctx.usedTarget())
@@ -141,17 +150,24 @@ public class PocExecutionServiceImpl implements PocExecutionService {
                 Files.copy(is, script);
             }
 
-            // Debug log showing the exact argv passed to the subprocess
             List<String> debugCmd = new ArrayList<>();
             debugCmd.add("python");
             debugCmd.add(poc.getOriginalFilename());
             debugCmd.addAll(ctx.args());
-            log.debug("[POC-EXEC] pocId={} mode={} strategy={} assetId={} port={} target={} params={} argv={}",
-                    pocId, mode, ctx.targetStrategy(), request.getAssetId(),
+            log.debug("[POC-EXEC] pocId={} actionKey={} strategy={} assetId={} port={} target={} params={} argv={}",
+                    pocId, actionKey, ctx.targetStrategy(), request.getAssetId(),
                     ctx.finalPort(), ctx.usedTarget(), request.getParams(), debugCmd);
 
-            response = runScript(pocId, script, ctx.args(), request.getTimeoutSeconds(),
-                    mode, ctx.targetStrategy(), ctx.finalPort(), ctx.usedTarget());
+            PocExecuteResponse base = runScript(pocId, script, ctx.args(), request.getTimeoutSeconds(),
+                    ctx.targetStrategy(), ctx.finalPort(), ctx.usedTarget());
+
+            response = base.toBuilder()
+                    .actionKey(actionKey)
+                    .actionLabel(actionLabel)
+                    .outputType(outputType)
+                    .artifacts(List.of())
+                    .mode(compatMode)
+                    .build();
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
@@ -165,14 +181,39 @@ public class PocExecutionServiceImpl implements PocExecutionService {
         return response.toBuilder().executionId(executionId).build();
     }
 
-    // ─── Private: context builder ─────────────────────────────────────────────
+    // ─── Private: action key resolution ──────────────────────────────────────
 
     /**
-     * Resolves target IP/port/strategy from the request, then delegates to
-     * {@link PocArgAssembler#assemble} for the actual mode→flag mapping.
-     * This keeps target-resolution logic separate from mode→argv logic.
+     * Priority: explicit actionKey > compat mode mapping > default CHECK_VULN.
+     * Mode compat: CHECK → CHECK_VULN, EXPLOIT → EXEC_COMMAND.
      */
-    private ExecCtx buildExecCtx(PocExecuteRequest request, Poc poc, ExecutionMode mode) {
+    private String resolveActionKey(PocExecuteRequest request) {
+        if (request.getActionKey() != null && !request.getActionKey().isBlank()) {
+            return request.getActionKey().trim();
+        }
+        if (request.getMode() == ExecutionMode.EXPLOIT) {
+            return "EXEC_COMMAND";
+        }
+        return "CHECK_VULN";
+    }
+
+    private void validateActionParams(String actionKey, PocExecuteRequest request) {
+        if ("EXEC_COMMAND".equals(actionKey)) {
+            String cmd = extractParamString(request.getParams(), "cmd");
+            if (cmd == null || cmd.isBlank()) {
+                throw new BusinessException(400, "动作 EXEC_COMMAND 需要 params.cmd");
+            }
+        }
+    }
+
+    /** Maps action key back to v1 ExecutionMode for compat fields. */
+    private ExecutionMode toCompatMode(String actionKey) {
+        return "EXEC_COMMAND".equals(actionKey) ? ExecutionMode.EXPLOIT : ExecutionMode.CHECK;
+    }
+
+    // ─── Private: context builder ─────────────────────────────────────────────
+
+    private ExecCtx buildExecCtx(PocExecuteRequest request, Poc poc, String actionKey) {
         TargetStrategy strategy = null;
         Integer finalPort = null;
         String usedTarget = null;
@@ -194,7 +235,6 @@ public class PocExecutionServiceImpl implements PocExecutionService {
                     log.debug("No reachable port found, falling back to {}", effectivePort);
                 }
             } else {
-                // EXPLICIT_PORT or legacy: new `port` field takes precedence over `assetPort`
                 effectivePort = request.getPort() != null ? request.getPort() : request.getAssetPort();
                 if (effectivePort != null) {
                     strategy = TargetStrategy.EXPLICIT_PORT;
@@ -206,34 +246,54 @@ public class PocExecutionServiceImpl implements PocExecutionService {
                 usedTarget = "http://" + assetIp + ":" + effectivePort;
                 urlMode = true;
             } else {
-                usedTarget = assetIp;  // legacy positional-arg mode
+                usedTarget = assetIp;
                 urlMode = false;
             }
         }
 
-        // Delegate mode→flag mapping to PocArgAssembler (single responsibility)
-        List<String> args = PocArgAssembler.assemble(mode, usedTarget, urlMode, request.getArguments(), request.getParams());
+        List<String> args = PocArgAssembler.assembleForAction(
+                actionKey, usedTarget, urlMode, request.getArguments(), request.getParams());
         return new ExecCtx(args, strategy, finalPort, usedTarget);
     }
 
-    // ─── Private: mode-param validation ──────────────────────────────────────
+    // ─── Private: schema helpers ──────────────────────────────────────────────
 
-    private void validateModeParams(ExecutionMode mode, PocExecuteRequest request) {
-        if (mode == ExecutionMode.EXPLOIT) {
-            String cmd = extractParamString(request.getParams(), "cmd");
-            if (cmd == null || cmd.isBlank()) {
-                throw new BusinessException(400, "EXPLOIT 模式需要 params.cmd");
-            }
-        }
+    /** Used by getExecutionSchema: requires both language=PYTHON AND .py extension. */
+    private boolean isPythonPoc(Poc poc) {
+        return poc.getLanguage() == Language.PYTHON
+                && poc.getOriginalFilename() != null
+                && poc.getOriginalFilename().toLowerCase().endsWith(".py");
     }
 
-    private String extractParamString(Map<String, Object> params, String key) {
-        if (params == null) return null;
-        Object v = params.get(key);
-        return v == null ? null : v.toString();
+    /** Used by execute: only requires .py extension (matches original behavior). */
+    private boolean isPyFile(Poc poc) {
+        return poc.getOriginalFilename() != null
+                && poc.getOriginalFilename().toLowerCase().endsWith(".py");
     }
 
-    // ─── Private: port scanning ───────────────────────────────────────────────
+    private String notExecutableReason(Poc poc) {
+        if (poc.getLanguage() != Language.PYTHON) return "仅支持 Python 脚本执行";
+        return "文件扩展名不是 .py";
+    }
+
+    /** Builds v1-compat paramSchemaByMode from the action list. */
+    private Map<String, List<ParamField>> buildCompatParamSchema(List<PocAction> actions) {
+        List<ParamField> checkParams = actions.stream()
+                .filter(a -> "CHECK_VULN".equals(a.getKey()))
+                .map(PocAction::getParams)
+                .findFirst()
+                .orElse(List.of());
+        List<ParamField> exploitParams = actions.stream()
+                .filter(a -> "EXEC_COMMAND".equals(a.getKey()))
+                .map(PocAction::getParams)
+                .findFirst()
+                .orElseGet(() -> List.of(ParamField.builder()
+                        .name("cmd").label("命令").type("text")
+                        .required(true).placeholder("请输入要执行的命令，如 whoami").build()));
+        return Map.of("CHECK", checkParams, "EXPLOIT", exploitParams);
+    }
+
+    // ─── Private: port resolution ─────────────────────────────────────────────
 
     private Integer scanForPort(String ip, List<Integer> ports) {
         for (Integer port : ports) {
@@ -272,7 +332,7 @@ public class PocExecutionServiceImpl implements PocExecutionService {
     // ─── Private: script runner ───────────────────────────────────────────────
 
     private PocExecuteResponse runScript(Long pocId, Path script, List<String> args, int timeoutSeconds,
-                                          ExecutionMode mode, TargetStrategy targetStrategy,
+                                          TargetStrategy targetStrategy,
                                           Integer finalPort, String usedTarget) {
         List<String> cmd = new ArrayList<>();
         cmd.add("python");
@@ -329,7 +389,7 @@ public class PocExecutionServiceImpl implements PocExecutionService {
                     .pocId(pocId).executed(true).success(false)
                     .stdout(stdout).stderr(stderr).truncated(truncated)
                     .startedAt(startedAt).finishedAt(finishedAt).durationMs(durationMs)
-                    .mode(mode).targetStrategy(targetStrategy)
+                    .targetStrategy(targetStrategy)
                     .finalPort(finalPort).usedTarget(usedTarget)
                     .message("执行超时，已强制终止（超时 " + timeoutSeconds + " 秒）")
                     .build();
@@ -340,7 +400,7 @@ public class PocExecutionServiceImpl implements PocExecutionService {
                 .pocId(pocId).executed(true).success(exitCode == 0).exitCode(exitCode)
                 .stdout(stdout).stderr(stderr).truncated(truncated)
                 .startedAt(startedAt).finishedAt(finishedAt).durationMs(durationMs)
-                .mode(mode).targetStrategy(targetStrategy)
+                .targetStrategy(targetStrategy)
                 .finalPort(finalPort).usedTarget(usedTarget)
                 .build();
     }
@@ -354,6 +414,8 @@ public class PocExecutionServiceImpl implements PocExecutionService {
             record.setAssetId(assetId);
             record.setExecutedBy(executedBy);
             record.setMode(resp.getMode());
+            record.setActionKey(resp.getActionKey());
+            record.setOutputType(resp.getOutputType());
             record.setTargetStrategy(resp.getTargetStrategy());
             record.setFinalPort(resp.getFinalPort());
             record.setUsedTarget(resp.getUsedTarget());
@@ -383,10 +445,12 @@ public class PocExecutionServiceImpl implements PocExecutionService {
         return poc;
     }
 
-    /**
-     * Reads up to MAX_OUTPUT_BYTES into holder[index], then drains the remainder
-     * without storing it so the subprocess never blocks on a full pipe buffer.
-     */
+    private String extractParamString(Map<String, Object> params, String key) {
+        if (params == null) return null;
+        Object v = params.get(key);
+        return v == null ? null : v.toString();
+    }
+
     private Thread drainThread(InputStream is, byte[][] holder, int index, AtomicBoolean truncatedFlag) {
         return new Thread(() -> {
             ByteArrayOutputStream buf = new ByteArrayOutputStream();

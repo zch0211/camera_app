@@ -13,6 +13,7 @@ import com.camera.app.poc.entity.PocStatus;
 import com.camera.app.poc.entity.TargetStrategy;
 import com.camera.app.poc.repository.PocRepository;
 import com.camera.app.storage.FileStorageService;
+import com.camera.app.poc.service.PocActionSchemaBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +40,7 @@ class PocExecutionServiceImplTest {
     @Mock FileStorageService fileStorageService;
     @Mock AssetRepository assetRepository;
     @Mock PocExecutionLogService pocExecutionLogService;
+    @Mock PocActionSchemaBuilder actionSchemaBuilder;
 
     @InjectMocks PocExecutionServiceImpl service;
 

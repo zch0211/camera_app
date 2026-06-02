@@ -17,6 +17,7 @@ com\camera\app\discovery\dto\BatchImportResponse.class
 com\camera\app\kg\dto\VulnHintItem$VulnHintItemBuilder.class
 com\camera\app\collection\rules\impl\WebFingerprintCategoryRule.class
 com\camera\app\poc\dto\PocExecuteResponse$PocExecuteResponseBuilder.class
+com\camera\app\poc\dto\PocAction$PocActionBuilder.class
 com\camera\app\discovery\dto\DiscoveryTaskResponse.class
 com\camera\app\asset\util\TechnicalProfileConverter$1.class
 com\camera\app\collection\probe\LightweightProbeService$ProbeSession.class
@@ -64,7 +65,9 @@ com\camera\app\collection\plugin\impl\TelnetBannerPlugin.class
 com\camera\app\kg\dto\GraphResponse$GraphResponseBuilder.class
 com\camera\app\asset\entity\AssetType.class
 com\camera\app\discovery\entity\DiscoverySourceType.class
+com\camera\app\poc\entity\OutputType.class
 com\camera\app\dashboard\DashboardServiceImpl.class
+com\camera\app\poc\dto\ArtifactInfo.class
 com\camera\app\collection\rules\RuleContext.class
 com\camera\app\discovery\controller\DiscoveryController.class
 com\camera\app\asset\dto\EvidenceRequest.class
@@ -84,6 +87,7 @@ com\camera\app\kg\dto\GraphEdge.class
 com\camera\app\collection\dto\CollectionResultResponse.class
 com\camera\app\poc\service\PocExecutionServiceImpl$1.class
 com\camera\app\collection\entity\ProbeType.class
+com\camera\app\poc\dto\PocAction.class
 com\camera\app\discovery\engine\PassiveSniffEngine$SniffEntry.class
 com\camera\app\poc\entity\Poc.class
 com\camera\app\common\response\ApiResponse.class
@@ -100,6 +104,8 @@ com\camera\app\iam\dto\UserUpdateRequest.class
 com\camera\app\asset\controller\AssetInferenceCandidateController.class
 com\camera\app\kg\client\CameraKgClient.class
 com\camera\app\discovery\dto\DiscoveryResultResponse.class
+com\camera\app\poc\entity\ActionCategory.class
+com\camera\app\poc\dto\ArtifactInfo$ArtifactInfoBuilder.class
 com\camera\app\asset\dto\InferenceCandidateResponse.class
 com\camera\app\poc\controller\PocController.class
 com\camera\app\collection\plugin\ProbeWritebackService.class
@@ -108,6 +114,7 @@ com\camera\app\poc\dto\PocExecuteResponse.class
 com\camera\app\discovery\engine\PassiveSniffEngine.class
 com\camera\app\discovery\entity\DiscoveryResult.class
 com\camera\app\discovery\engine\DeviceTypeClassifier$ClassificationResult.class
+com\camera\app\poc\service\PocActionSchemaBuilder.class
 com\camera\app\asset\dto\AssetCreateRequest.class
 com\camera\app\poc\dto\PocListItemResponse.class
 com\camera\app\collection\dto\DeviceTypeDetectionResponse.class
@@ -139,6 +146,7 @@ com\camera\app\poc\service\PocExecutionService.class
 com\camera\app\asset\repository\AssetEvidenceRepository.class
 com\camera\app\collection\probe\LightweightProbeService$HttpResult.class
 com\camera\app\kg\dto\GraphEdge$GraphEdgeBuilder.class
+com\camera\app\poc\entity\RiskLevel.class
 com\camera\app\iam\service\UserService.class
 com\camera\app\poc\entity\TargetStrategy.class
 com\camera\app\poc\dto\PocContentResponse.class
@@ -166,6 +174,7 @@ com\camera\app\iam\dto\UserResponse.class
 com\camera\app\dashboard\DashboardController.class
 com\camera\app\collection\service\AssetCollectionServiceImpl$1.class
 com\camera\app\asset\service\AssetServiceImpl.class
+com\camera\app\poc\service\PocActionSchemaBuilder$ActionRule.class
 com\camera\app\CameraAppApplication.class
 com\camera\app\iam\dto\LoginRequest.class
 com\camera\app\poc\dto\PocExecutionSchema.class

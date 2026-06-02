@@ -18,15 +18,18 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\poc\repository\PocReposi
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocServiceImpl.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\InferenceCandidateResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\config\MinioConfig.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocAction.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\controller\AssetController.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocListItemResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\discovery\service\DiscoveryTaskExecutor.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\OutputType.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\dto\CollectionTaskCreateRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\AssetUpdateRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\plugin\ProbeRegistry.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\security\JwtProperties.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\Severity.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocExecutionLogService.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\ActionCategory.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\dto\CollectionResultResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\Poc.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\discovery\service\DiscoveryService.java
@@ -92,6 +95,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\collection\entity\AssetC
 D:\code\camera_app\backend\src\main\java\com\camera\app\dashboard\DashboardServiceImpl.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\client\CameraKgClient.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\dto\VulnHintsResponse.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\ArtifactInfo.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\discovery\entity\DiscoveryPreset.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\rules\impl\RtspOnvifIpcRule.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\entity\CollectionTaskType.java
@@ -105,6 +109,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\system\SystemController.
 D:\code\camera_app\backend\src\main\java\com\camera\app\dashboard\DashboardService.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\service\AssetService.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\discovery\engine\ScanHostResult.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocActionSchemaBuilder.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\config\MinioProperties.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\UserInfoResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\dto\EnrichResponse.java
@@ -112,6 +117,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocExecutionLogR
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\service\CollectionTaskStatusService.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\dto\DeviceTypeDetectionResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\plugin\impl\OnvifProbePlugin.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\RiskLevel.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\probe\LightweightProbeService.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\discovery\engine\SniffHostResult.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\service\UserService.java
