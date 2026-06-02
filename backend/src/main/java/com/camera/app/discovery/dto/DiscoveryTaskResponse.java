@@ -18,7 +18,8 @@ public class DiscoveryTaskResponse {
     private final String networkInterface;
     private final String summary;
     private final String errorMessage;
-    private final int discoveredCount;
+    private final int aliveCount;
+    private final int candidateCount;
     private final LocalDateTime startedAt;
     private final LocalDateTime finishedAt;
     private final LocalDateTime createdAt;
@@ -35,7 +36,8 @@ public class DiscoveryTaskResponse {
         this.networkInterface = t.getNetworkInterface();
         this.summary = t.getSummary();
         this.errorMessage = t.getErrorMessage();
-        this.discoveredCount = t.getDiscoveredCount();
+        this.aliveCount = t.getAliveCount();
+        this.candidateCount = t.getCandidateCount();
         this.startedAt = t.getStartedAt();
         this.finishedAt = t.getFinishedAt();
         this.createdAt = t.getCreatedAt();

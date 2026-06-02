@@ -4,5 +4,6 @@ public enum DiscoveryStatus {
     PENDING,
     RUNNING,
     SUCCESS,
-    FAILED
+    FAILED,
+    CANCELED
 }

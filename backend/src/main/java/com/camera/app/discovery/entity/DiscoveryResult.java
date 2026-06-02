@@ -52,6 +52,10 @@ public class DiscoveryResult {
     @Column(name = "source_type", nullable = false, columnDefinition = "varchar(32)")
     private DiscoverySourceType sourceType = DiscoverySourceType.SCAN;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "discovery_level", nullable = false, columnDefinition = "varchar(32)")
+    private DiscoveryLevel discoveryLevel = DiscoveryLevel.CANDIDATE;
+
     /** JSON evidence blob */
     @Column(name = "raw_evidence", columnDefinition = "TEXT")
     private String rawEvidence;

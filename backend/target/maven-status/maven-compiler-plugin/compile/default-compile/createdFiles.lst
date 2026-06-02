@@ -41,6 +41,7 @@ com\camera\app\discovery\repository\DiscoveryResultRepository.class
 com\camera\app\collection\rules\impl\RtspOnvifIpcRule.class
 com\camera\app\asset\repository\AssetRepository.class
 com\camera\app\asset\service\AssetProfileService.class
+com\camera\app\discovery\entity\DiscoveryLevel.class
 com\camera\app\poc\service\PocDownloadResult.class
 com\camera\app\collection\rules\impl\RouterRule.class
 com\camera\app\asset\entity\EvidenceSourceType.class

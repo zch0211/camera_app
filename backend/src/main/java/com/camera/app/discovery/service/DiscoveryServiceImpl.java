@@ -7,6 +7,7 @@ import com.camera.app.common.exception.BusinessException;
 import com.camera.app.common.response.PageResult;
 import com.camera.app.discovery.dto.*;
 import com.camera.app.discovery.entity.*;
+import com.camera.app.discovery.entity.DiscoveryLevel;
 import com.camera.app.discovery.repository.DiscoveryResultRepository;
 import com.camera.app.discovery.repository.DiscoveryTaskRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -43,7 +44,9 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         task.setTargetScope(req.getTargetScope());
         task.setStatus(DiscoveryStatus.PENDING);
 
-        int timeoutMs = req.getTimeoutMillis() != null ? req.getTimeoutMillis() : 2000;
+        // Discovery tasks use a shorter default timeout than deep collection (1000ms vs 2000ms)
+        int defaultTimeout = (req.getTaskType() == DiscoveryTaskType.ACTIVE_SCAN) ? 1000 : 2000;
+        int timeoutMs = req.getTimeoutMillis() != null ? req.getTimeoutMillis() : defaultTimeout;
         task.setTimeoutMillis(timeoutMs);
 
         if (req.getSniffDurationSeconds() != null) {
@@ -109,6 +112,18 @@ public class DiscoveryServiceImpl implements DiscoveryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PageResult<DiscoveryResultResponse> listAllResults(Long taskId, Boolean managed,
+                                                              DiscoverySourceType sourceType,
+                                                              String deviceType,
+                                                              DiscoveryLevel discoveryLevel,
+                                                              String keyword, int page, int size) {
+        return new PageResult<>(resultRepository.findAllWithFilters(
+                taskId, managed, sourceType, deviceType, discoveryLevel, keyword,
+                PageRequest.of(page, size)).map(DiscoveryResultResponse::new));
+    }
+
+    @Override
     public BatchImportResponse batchImport(BatchImportRequest req) {
         List<DiscoveryResult> results = resultRepository.findByIdIn(req.getResultIds());
 
@@ -156,6 +171,28 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         }
 
         return new BatchImportResponse(importedCount, skippedCount, failedCount, importedAssetIds, failedIps);
+    }
+
+    @Override
+    public DiscoveryTaskResponse stopTask(Long taskId) {
+        DiscoveryTask task = loadTask(taskId);
+        DiscoveryStatus current = task.getStatus();
+
+        if (current != DiscoveryStatus.PENDING && current != DiscoveryStatus.RUNNING) {
+            throw new BusinessException(400,
+                    "任务当前状态为 " + current + "，无法停止（只有 PENDING / RUNNING 可停止）");
+        }
+
+        // Set CANCELED immediately so the caller gets an up-to-date response.
+        // The async executor will detect this via isCanceled() and finalize the count.
+        task.setStatus(DiscoveryStatus.CANCELED);
+        task.setFinishedAt(LocalDateTime.now());
+        task.setSummary(String.format("用户主动停止，存活 %d 台，候选 %d 台（最终数值稍后更新）",
+                task.getAliveCount(), task.getCandidateCount()));
+        task = taskRepository.save(task);
+
+        log.info("发现任务已被用户停止 taskId={} previousStatus={}", taskId, current);
+        return new DiscoveryTaskResponse(task);
     }
 
     @Override

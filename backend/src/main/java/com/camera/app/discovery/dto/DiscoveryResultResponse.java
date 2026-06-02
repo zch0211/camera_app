@@ -20,6 +20,7 @@ public class DiscoveryResultResponse {
     private final String deviceTypeCandidate;
     private final BigDecimal confidence;
     private final String sourceType;
+    private final String discoveryLevel;
     private final String rawEvidence;
     private final LocalDateTime firstSeenAt;
     private final LocalDateTime lastSeenAt;
@@ -39,6 +40,7 @@ public class DiscoveryResultResponse {
         this.deviceTypeCandidate = r.getDeviceTypeCandidate();
         this.confidence = r.getConfidence();
         this.sourceType = r.getSourceType().name();
+        this.discoveryLevel = r.getDiscoveryLevel().name();
         this.rawEvidence = r.getRawEvidence();
         this.firstSeenAt = r.getFirstSeenAt();
         this.lastSeenAt = r.getLastSeenAt();

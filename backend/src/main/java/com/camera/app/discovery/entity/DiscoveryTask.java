@@ -55,6 +55,12 @@ public class DiscoveryTask {
     @Column(name = "discovered_count", nullable = false)
     private int discoveredCount = 0;
 
+    @Column(name = "alive_count", nullable = false)
+    private int aliveCount = 0;
+
+    @Column(name = "candidate_count", nullable = false)
+    private int candidateCount = 0;
+
     @Column(name = "started_at")
     private LocalDateTime startedAt;
 

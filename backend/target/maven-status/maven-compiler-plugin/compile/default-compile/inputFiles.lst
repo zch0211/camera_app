@@ -34,6 +34,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\collection\plugin\ProbeC
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\dto\GraphResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\TargetStrategy.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\EvidenceRequest.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\discovery\entity\DiscoveryLevel.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\AssetResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\plugin\impl\HttpFingerprintPlugin.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\entity\PocStatus.java
