@@ -142,6 +142,7 @@ com\camera\app\discovery\entity\DiscoveryTaskType.class
 com\camera\app\collection\service\AssetCollectionServiceImpl.class
 com\camera\app\collection\plugin\impl\OnvifProbePlugin$1.class
 com\camera\app\config\MinioProperties.class
+com\camera\app\poc\service\StandardActions$ActionDef.class
 com\camera\app\poc\service\PocExecutionService.class
 com\camera\app\asset\repository\AssetEvidenceRepository.class
 com\camera\app\collection\probe\LightweightProbeService$HttpResult.class
@@ -174,7 +175,6 @@ com\camera\app\iam\dto\UserResponse.class
 com\camera\app\dashboard\DashboardController.class
 com\camera\app\collection\service\AssetCollectionServiceImpl$1.class
 com\camera\app\asset\service\AssetServiceImpl.class
-com\camera\app\poc\service\PocActionSchemaBuilder$ActionRule.class
 com\camera\app\CameraAppApplication.class
 com\camera\app\iam\dto\LoginRequest.class
 com\camera\app\poc\dto\PocExecutionSchema.class
@@ -187,6 +187,7 @@ com\camera\app\poc\service\PocExecutionLogService.class
 com\camera\app\discovery\entity\DiscoveryTask.class
 com\camera\app\kg\dto\VulnHintsResponse$VulnHintsResponseBuilder.class
 com\camera\app\iam\entity\Role.class
+com\camera\app\poc\service\PocExecutionLogServiceImpl$1.class
 com\camera\app\collection\service\CollectionTaskStatusService.class
 com\camera\app\asset\dto\EvidenceResponse.class
 com\camera\app\poc\entity\Protocol.class
@@ -194,6 +195,7 @@ com\camera\app\kg\config\CameraKgConfig.class
 com\camera\app\collection\controller\AssetCollectionController.class
 com\camera\app\dashboard\DashboardOverviewResponse$DashboardOverviewResponseBuilder.class
 com\camera\app\collection\dto\CollectionTaskResponse.class
+com\camera\app\poc\service\StandardActions.class
 com\camera\app\poc\dto\ParamField.class
 com\camera\app\poc\service\PocExecutionLogServiceImpl.class
 com\camera\app\asset\dto\AssetProfileResponse.class
@@ -211,6 +213,7 @@ com\camera\app\iam\controller\UserController.class
 com\camera\app\poc\entity\PocStatus.class
 com\camera\app\security\JwtAuthenticationFilter.class
 com\camera\app\discovery\engine\ActiveScanEngine.class
+com\camera\app\poc\service\PocExecutionLogServiceImpl$2.class
 com\camera\app\poc\controller\PocExecutionController.class
 com\camera\app\kg\dto\EnrichResponse$EnrichResponseBuilder.class
 com\camera\app\iam\repository\UserRepository.class

@@ -37,9 +37,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String resolveToken(HttpServletRequest request) {
+        // Primary: Authorization header (works for XHR / fetch with explicit header)
         String header = request.getHeader("Authorization");
         if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
             return header.substring(7);
+        }
+        // Fallback: ?token= query param — only for artifact preview/download endpoints
+        // so that <img src="...?token=xxx"> and direct download links work in the browser
+        // without needing a custom request header.
+        String path = request.getServletPath();
+        if (path != null && path.contains("/artifacts/")
+                && (path.endsWith("/preview") || path.endsWith("/download"))) {
+            String queryToken = request.getParameter("token");
+            if (StringUtils.hasText(queryToken)) {
+                return queryToken;
+            }
         }
         return null;
     }

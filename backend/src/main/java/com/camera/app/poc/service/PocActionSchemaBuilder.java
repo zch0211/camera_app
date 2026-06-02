@@ -1,6 +1,5 @@
 package com.camera.app.poc.service;
 
-import com.camera.app.poc.dto.ParamField;
 import com.camera.app.poc.dto.PocAction;
 import com.camera.app.poc.entity.Language;
 import com.camera.app.poc.entity.Poc;
@@ -13,49 +12,14 @@ import java.util.List;
 /**
  * 从 POC 元数据 + Python 脚本内容识别动作（action）列表。
  *
- * 识别规则（按优先级从前到后扫描脚本 flags）：
- *   --check    → CHECK_VULN     (VERIFY,   BOOLEAN_TEXT, LOW)
- *   --cmd      → EXEC_COMMAND   (INTERACT, TEXT,         HIGH)
- *   --snapshot → FETCH_SNAPSHOT (READ,     IMAGE,        LOW)
- *   --users    → LIST_USERS     (READ,     JSON,         LOW)
- *   --config   → DOWNLOAD_CONFIG(DOWNLOAD, FILE,         LOW)
- *
- * 识别不到任何 flag → 回退到仅含 CHECK_VULN 的默认动作列表。
- * 第一个被识别到的动作自动标记为 defaultAction=true。
+ * 动作定义的单一事实来源是 {@link StandardActions}，本类负责"识别"逻辑：
+ * 按 StandardActions.ALL 顺序扫描脚本中是否含对应 cliFlag；
+ * 找到的第一个动作标记为 defaultAction=true；
+ * 识别不到任何 flag 则回退到仅含 CHECK_VULN 的默认列表。
  */
 @Slf4j
 @Component
 public class PocActionSchemaBuilder {
-
-    private record ActionRule(
-            String flag,
-            String key,
-            String label,
-            String category,
-            String outputType,
-            String riskLevel,
-            List<ParamField> params
-    ) {}
-
-    private static final List<ActionRule> PYTHON_RULES = List.of(
-            new ActionRule("--check",
-                    "CHECK_VULN", "漏洞检测", "VERIFY", "BOOLEAN_TEXT", "LOW",
-                    List.of()),
-            new ActionRule("--cmd",
-                    "EXEC_COMMAND", "执行命令", "INTERACT", "TEXT", "HIGH",
-                    List.of(ParamField.builder()
-                            .name("cmd").label("命令").type("text")
-                            .required(true).placeholder("请输入命令，如 whoami").build())),
-            new ActionRule("--snapshot",
-                    "FETCH_SNAPSHOT", "获取快照", "READ", "IMAGE", "LOW",
-                    List.of()),
-            new ActionRule("--users",
-                    "LIST_USERS", "读取用户列表", "READ", "JSON", "LOW",
-                    List.of()),
-            new ActionRule("--config",
-                    "DOWNLOAD_CONFIG", "下载配置", "DOWNLOAD", "FILE", "LOW",
-                    List.of())
-    );
 
     /**
      * 构建 POC 的动作列表。
@@ -75,22 +39,14 @@ public class PocActionSchemaBuilder {
         return fallback();
     }
 
-    /** 根据 action key 返回其预期 outputType 字符串，未知 key 返回 "TEXT"。 */
+    /** 根据 action key 返回其预期 outputType 字符串，委托 StandardActions。 */
     public String getOutputType(String actionKey) {
-        return PYTHON_RULES.stream()
-                .filter(r -> r.key().equals(actionKey))
-                .map(ActionRule::outputType)
-                .findFirst()
-                .orElse("TEXT");
+        return StandardActions.outputType(actionKey);
     }
 
-    /** 根据 action key 返回其显示 label，未知 key 直接返回 key 本身。 */
+    /** 根据 action key 返回其显示 label，委托 StandardActions。 */
     public String getLabel(String actionKey) {
-        return PYTHON_RULES.stream()
-                .filter(r -> r.key().equals(actionKey))
-                .map(ActionRule::label)
-                .findFirst()
-                .orElse(actionKey);
+        return StandardActions.label(actionKey);
     }
 
     // ─── private ──────────────────────────────────────────────────────────────
@@ -98,9 +54,9 @@ public class PocActionSchemaBuilder {
     private List<PocAction> detectFromContent(Long pocId, String content) {
         List<PocAction> result = new ArrayList<>();
         boolean first = true;
-        for (ActionRule rule : PYTHON_RULES) {
-            if (content.contains(rule.flag())) {
-                result.add(toAction(rule, first));
+        for (StandardActions.ActionDef def : StandardActions.ALL) {
+            if (content.contains(def.cliFlag())) {
+                result.add(toAction(def, first));
                 first = false;
             }
         }
@@ -112,18 +68,18 @@ public class PocActionSchemaBuilder {
     }
 
     private List<PocAction> fallback() {
-        return List.of(toAction(PYTHON_RULES.get(0), true));
+        return List.of(toAction(StandardActions.ALL.get(0), true));
     }
 
-    private PocAction toAction(ActionRule rule, boolean isDefault) {
+    private PocAction toAction(StandardActions.ActionDef def, boolean isDefault) {
         return PocAction.builder()
-                .key(rule.key())
-                .label(rule.label())
-                .category(rule.category())
-                .outputType(rule.outputType())
-                .riskLevel(rule.riskLevel())
+                .key(def.key())
+                .label(def.label())
+                .category(def.category())
+                .outputType(def.outputType())
+                .riskLevel(def.riskLevel())
                 .defaultAction(isDefault)
-                .params(rule.params())
+                .params(def.params())
                 .build();
     }
 }

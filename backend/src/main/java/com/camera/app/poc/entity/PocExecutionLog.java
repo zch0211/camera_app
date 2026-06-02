@@ -36,6 +36,9 @@ public class PocExecutionLog {
     @Column(name = "output_type", length = 32)
     private String outputType;
 
+    @Column(name = "artifact_summary", columnDefinition = "TEXT")
+    private String artifactSummary;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "target_strategy", columnDefinition = "varchar(32)")
     private TargetStrategy targetStrategy;

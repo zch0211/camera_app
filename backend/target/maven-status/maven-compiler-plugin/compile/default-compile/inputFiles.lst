@@ -158,6 +158,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\dashboard\DashboardOverv
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocExecutionLogSummary.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\discovery\engine\DeviceTypeClassifier.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocArgAssembler.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\StandardActions.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\entity\TaskPreset.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\common\exception\GlobalExceptionHandler.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\config\CameraKgConfig.java

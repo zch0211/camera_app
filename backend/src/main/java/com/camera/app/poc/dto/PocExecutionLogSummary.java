@@ -17,6 +17,7 @@ public class PocExecutionLogSummary {
     private final ExecutionMode mode;
     private final String actionKey;
     private final String outputType;
+    private final boolean hasArtifacts;
     private final TargetStrategy targetStrategy;
     private final Integer finalPort;
     private final String usedTarget;
@@ -36,6 +37,7 @@ public class PocExecutionLogSummary {
         this.mode = log.getMode();
         this.actionKey = log.getActionKey();
         this.outputType = log.getOutputType();
+        this.hasArtifacts = log.getArtifactSummary() != null && !log.getArtifactSummary().isBlank();
         this.targetStrategy = log.getTargetStrategy();
         this.finalPort = log.getFinalPort();
         this.usedTarget = log.getUsedTarget();

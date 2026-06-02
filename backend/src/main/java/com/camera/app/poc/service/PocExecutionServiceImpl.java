@@ -11,6 +11,7 @@ import com.camera.app.poc.dto.PocExecutionSchema;
 import com.camera.app.poc.entity.*;
 import com.camera.app.poc.repository.PocRepository;
 import com.camera.app.storage.FileStorageService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,14 +21,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -43,6 +42,7 @@ public class PocExecutionServiceImpl implements PocExecutionService {
     private final AssetRepository assetRepository;
     private final PocExecutionLogService pocExecutionLogService;
     private final PocActionSchemaBuilder actionSchemaBuilder;
+    private final ObjectMapper objectMapper;
 
     private record ExecCtx(List<String> args, TargetStrategy targetStrategy,
                            Integer finalPort, String usedTarget) {}
@@ -57,7 +57,6 @@ public class PocExecutionServiceImpl implements PocExecutionService {
         String reason = executable ? null : notExecutableReason(poc);
         List<Integer> recommendedPorts = deriveRecommendedPorts(poc);
 
-        // For Python POCs, try to read script content for action detection
         String scriptContent = null;
         if (executable && poc.getObjectKey() != null) {
             try (InputStream is = fileStorageService.download(poc.getObjectKey())) {
@@ -68,8 +67,6 @@ public class PocExecutionServiceImpl implements PocExecutionService {
         }
 
         List<PocAction> actions = actionSchemaBuilder.buildActions(poc, scriptContent);
-
-        // v1 compat: derive paramSchemaByMode from action list
         Map<String, List<ParamField>> compatParamSchema = buildCompatParamSchema(actions);
 
         return PocExecutionSchema.builder()
@@ -85,7 +82,6 @@ public class PocExecutionServiceImpl implements PocExecutionService {
                 .supportsExplicitPort(true)
                 .supportsAutoPortSuggestion(!recommendedPorts.isEmpty())
                 .actions(actions)
-                // v1 compat fields
                 .modes(List.of(ExecutionMode.CHECK, ExecutionMode.EXPLOIT))
                 .defaultMode(ExecutionMode.CHECK)
                 .highRisk(false)
@@ -107,17 +103,21 @@ public class PocExecutionServiceImpl implements PocExecutionService {
                     .build();
         }
 
-        // Resolve action key: explicit actionKey > compat mode mapping > default CHECK_VULN
         String actionKey = resolveActionKey(request);
         validateActionParams(actionKey, request);
 
-        ExecCtx ctx = buildExecCtx(request, poc, actionKey);
+        // For FETCH_SNAPSHOT / DOWNLOAD_CONFIG: auto-fill outputFile if not provided
+        Map<String, Object> effectiveParams = prepareParams(actionKey, poc, request.getParams());
+        String outputFileName = StandardActions.supportsOutputFile(actionKey)
+                ? extractParamString(effectiveParams, "outputFile") : null;
 
-        String actionLabel = actionSchemaBuilder.getLabel(actionKey);
-        String outputType  = actionSchemaBuilder.getOutputType(actionKey);
+        ExecCtx ctx = buildExecCtx(request, poc, actionKey, effectiveParams);
+
+        String actionLabel = StandardActions.label(actionKey);
+        String outputType  = StandardActions.outputType(actionKey);
         ExecutionMode compatMode = toCompatMode(actionKey);
 
-        // ── Dry-run: return resolved argv without running the script ──────────
+        // ── Dry-run ──────────────────────────────────────────────────────────
         if (request.isDryRun()) {
             List<String> previewCmd = new ArrayList<>();
             previewCmd.add("python");
@@ -125,24 +125,22 @@ public class PocExecutionServiceImpl implements PocExecutionService {
             previewCmd.addAll(ctx.args());
             log.info("[POC-DRYRUN] pocId={} actionKey={} strategy={} assetId={} port={} target={} params={} argv={}",
                     pocId, actionKey, ctx.targetStrategy(), request.getAssetId(),
-                    ctx.finalPort(), ctx.usedTarget(), request.getParams(), previewCmd);
+                    ctx.finalPort(), ctx.usedTarget(), effectiveParams, previewCmd);
             return PocExecuteResponse.builder()
-                    .pocId(pocId)
-                    .executed(false)
-                    .actionKey(actionKey)
-                    .actionLabel(actionLabel)
-                    .outputType(outputType)
-                    .artifacts(List.of())
-                    .mode(compatMode)
+                    .pocId(pocId).executed(false)
+                    .actionKey(actionKey).actionLabel(actionLabel).outputType(outputType)
+                    .artifacts(List.of()).mode(compatMode)
                     .targetStrategy(ctx.targetStrategy())
-                    .finalPort(ctx.finalPort())
-                    .usedTarget(ctx.usedTarget())
+                    .finalPort(ctx.finalPort()).usedTarget(ctx.usedTarget())
                     .message("DRY-RUN: argv=" + previewCmd)
                     .build();
         }
 
         Path tempDir = null;
-        PocExecuteResponse response;
+        List<ArtifactInfo> artifacts = new ArrayList<>();
+        Object parsedOutput = null;
+        PocExecuteResponse baseResponse;
+
         try {
             tempDir = Files.createTempDirectory("poc-exec-");
             Path script = tempDir.resolve(poc.getOriginalFilename());
@@ -150,24 +148,25 @@ public class PocExecutionServiceImpl implements PocExecutionService {
                 Files.copy(is, script);
             }
 
-            List<String> debugCmd = new ArrayList<>();
-            debugCmd.add("python");
-            debugCmd.add(poc.getOriginalFilename());
-            debugCmd.addAll(ctx.args());
             log.debug("[POC-EXEC] pocId={} actionKey={} strategy={} assetId={} port={} target={} params={} argv={}",
                     pocId, actionKey, ctx.targetStrategy(), request.getAssetId(),
-                    ctx.finalPort(), ctx.usedTarget(), request.getParams(), debugCmd);
+                    ctx.finalPort(), ctx.usedTarget(), effectiveParams,
+                    buildDebugCmd(poc.getOriginalFilename(), ctx.args()));
 
-            PocExecuteResponse base = runScript(pocId, script, ctx.args(), request.getTimeoutSeconds(),
+            baseResponse = runScript(pocId, script, ctx.args(), request.getTimeoutSeconds(),
                     ctx.targetStrategy(), ctx.finalPort(), ctx.usedTarget());
 
-            response = base.toBuilder()
-                    .actionKey(actionKey)
-                    .actionLabel(actionLabel)
-                    .outputType(outputType)
-                    .artifacts(List.of())
-                    .mode(compatMode)
-                    .build();
+            // Collect file artifact from tempDir — must happen before deleteQuietly
+            if (baseResponse.isExecuted() && Boolean.TRUE.equals(baseResponse.getSuccess())
+                    && outputFileName != null) {
+                collectArtifact(artifacts, tempDir, pocId, actionKey, outputFileName);
+            }
+
+            // Parse stdout as JSON for JSON-output actions
+            if (baseResponse.isExecuted() && "JSON".equals(outputType)) {
+                parsedOutput = tryParseJson(baseResponse.getStdout());
+            }
+
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
@@ -177,16 +176,39 @@ public class PocExecutionServiceImpl implements PocExecutionService {
             deleteQuietly(tempDir);
         }
 
+        PocExecuteResponse response = baseResponse.toBuilder()
+                .actionKey(actionKey)
+                .actionLabel(actionLabel)
+                .outputType(outputType)
+                .artifacts(artifacts)
+                .parsedOutput(parsedOutput)
+                .mode(compatMode)
+                .build();
+
+        // FETCH_SNAPSHOT-specific guard: success but no IMAGE artifact is a warning state
+        if ("FETCH_SNAPSHOT".equals(actionKey) && Boolean.TRUE.equals(response.getSuccess())
+                && artifacts.isEmpty()) {
+            log.warn("[POC-ARTIFACT] FETCH_SNAPSHOT succeeded (pocId={}) but produced no IMAGE artifact — "
+                    + "script may not have written the output file or used a different filename", pocId);
+            response = response.toBuilder()
+                    .message("快照动作成功执行，但未生成图片附件（脚本未写出文件或文件名与预期不符：" + outputFileName + "）")
+                    .build();
+        }
+
         Long executionId = saveExecutionLog(pocId, request.getAssetId(), executedBy, response);
+
+        // Enrich artifact URLs with executionId (known only after log is saved)
+        if (executionId != null && !artifacts.isEmpty()) {
+            List<ArtifactInfo> enriched = artifacts.stream()
+                    .map(a -> enrichArtifactUrl(a, executionId))
+                    .toList();
+            return response.toBuilder().executionId(executionId).artifacts(enriched).build();
+        }
         return response.toBuilder().executionId(executionId).build();
     }
 
     // ─── Private: action key resolution ──────────────────────────────────────
 
-    /**
-     * Priority: explicit actionKey > compat mode mapping > default CHECK_VULN.
-     * Mode compat: CHECK → CHECK_VULN, EXPLOIT → EXEC_COMMAND.
-     */
     private String resolveActionKey(PocExecuteRequest request) {
         if (request.getActionKey() != null && !request.getActionKey().isBlank()) {
             return request.getActionKey().trim();
@@ -206,14 +228,34 @@ public class PocExecutionServiceImpl implements PocExecutionService {
         }
     }
 
-    /** Maps action key back to v1 ExecutionMode for compat fields. */
     private ExecutionMode toCompatMode(String actionKey) {
         return "EXEC_COMMAND".equals(actionKey) ? ExecutionMode.EXPLOIT : ExecutionMode.CHECK;
     }
 
+    // ─── Private: params preparation ─────────────────────────────────────────
+
+    /**
+     * For artifact-producing actions (FETCH_SNAPSHOT / DOWNLOAD_CONFIG):
+     * auto-generates outputFile if caller did not supply one.
+     */
+    private Map<String, Object> prepareParams(String actionKey, Poc poc, Map<String, Object> requestParams) {
+        if (!StandardActions.supportsOutputFile(actionKey)) {
+            return requestParams != null ? requestParams : Map.of();
+        }
+        Map<String, Object> params = new HashMap<>(requestParams != null ? requestParams : Map.of());
+        String of = extractParamString(params, "outputFile");
+        if (of == null || of.isBlank()) {
+            String ts = String.valueOf(System.currentTimeMillis());
+            String ext = "FETCH_SNAPSHOT".equals(actionKey) ? ".jpg" : ".dat";
+            params.put("outputFile", actionKey.toLowerCase() + "_poc" + poc.getId() + "_" + ts + ext);
+        }
+        return params;
+    }
+
     // ─── Private: context builder ─────────────────────────────────────────────
 
-    private ExecCtx buildExecCtx(PocExecuteRequest request, Poc poc, String actionKey) {
+    private ExecCtx buildExecCtx(PocExecuteRequest request, Poc poc, String actionKey,
+                                  Map<String, Object> effectiveParams) {
         TargetStrategy strategy = null;
         Integer finalPort = null;
         String usedTarget = null;
@@ -252,20 +294,106 @@ public class PocExecutionServiceImpl implements PocExecutionService {
         }
 
         List<String> args = PocArgAssembler.assembleForAction(
-                actionKey, usedTarget, urlMode, request.getArguments(), request.getParams());
+                actionKey, usedTarget, urlMode, request.getArguments(), effectiveParams);
         return new ExecCtx(args, strategy, finalPort, usedTarget);
+    }
+
+    // ─── Private: artifact collection ────────────────────────────────────────
+
+    /**
+     * After the script exits successfully, looks for outputFileName in tempDir.
+     * If found, uploads to MinIO and appends ArtifactInfo to the artifacts list.
+     */
+    private void collectArtifact(List<ArtifactInfo> artifacts, Path tempDir, Long pocId,
+                                  String actionKey, String outputFileName) {
+        Path artifactFile = tempDir.resolve(outputFileName);
+        if (!Files.exists(artifactFile)) {
+            log.warn("[POC-ARTIFACT] Expected output file not found: {} (pocId={})", outputFileName, pocId);
+            return;
+        }
+        try {
+            long size = Files.size(artifactFile);
+            String mimeType = resolveMimeType(outputFileName, actionKey);
+            String objectKey = "artifacts/poc-" + pocId + "/" + outputFileName;
+
+            try (InputStream is = Files.newInputStream(artifactFile)) {
+                fileStorageService.upload(objectKey, is, size, mimeType);
+            }
+
+            String artifactType = mimeType.startsWith("image/") ? "IMAGE" : "FILE";
+            artifacts.add(ArtifactInfo.builder()
+                    .name(outputFileName)
+                    .type(artifactType)
+                    .mimeType(mimeType)
+                    .sizeBytes(size)
+                    .objectKey(objectKey)
+                    .path(objectKey)
+                    .previewable("IMAGE".equals(artifactType))
+                    .downloadable(true)
+                    .build());
+
+            log.info("[POC-ARTIFACT] Uploaded artifact: {} ({} bytes, pocId={})", objectKey, size, pocId);
+        } catch (Exception e) {
+            log.warn("[POC-ARTIFACT] Failed to collect artifact {} for pocId={}: {}",
+                    outputFileName, pocId, e.getMessage());
+        }
+    }
+
+    private String resolveMimeType(String filename, String actionKey) {
+        // FETCH_SNAPSHOT always produces a JPEG
+        if ("FETCH_SNAPSHOT".equals(actionKey)) return "image/jpeg";
+        String lower = filename.toLowerCase();
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+        if (lower.endsWith(".png"))  return "image/png";
+        if (lower.endsWith(".json")) return "application/json";
+        if (lower.endsWith(".xml"))  return "application/xml";
+        if (lower.endsWith(".txt"))  return "text/plain";
+        return "application/octet-stream";
+    }
+
+    /**
+     * Enrich an ArtifactInfo with downloadUrl/previewUrl once executionId is known.
+     * previewUrl → /preview (inline, browser-renderable, supports ?token= for <img src>)
+     * downloadUrl → /download (attachment, forces Save dialog, supports ?token= for direct links)
+     */
+    private ArtifactInfo enrichArtifactUrl(ArtifactInfo a, Long executionId) {
+        String base = "/api/v1/poc-executions/" + executionId
+                + "/artifacts/" + URLEncoder.encode(a.getName(), StandardCharsets.UTF_8);
+        return a.toBuilder()
+                .downloadUrl(base + "/download")
+                .previewUrl("IMAGE".equals(a.getType()) ? base + "/preview" : null)
+                .build();
+    }
+
+    // ─── Private: JSON output parsing ────────────────────────────────────────
+
+    private Object tryParseJson(String stdout) {
+        if (stdout == null || stdout.isBlank()) return null;
+        String trimmed = stdout.trim();
+        // Find the first JSON object '{' or array '[' in stdout
+        int objIdx = trimmed.indexOf('{');
+        int arrIdx = trimmed.indexOf('[');
+        int start = -1;
+        if (objIdx >= 0 && arrIdx >= 0) start = Math.min(objIdx, arrIdx);
+        else if (objIdx >= 0) start = objIdx;
+        else if (arrIdx >= 0) start = arrIdx;
+        if (start < 0) return null;
+        try {
+            return objectMapper.readValue(trimmed.substring(start), Object.class);
+        } catch (Exception e) {
+            log.debug("[POC-JSON] Could not parse stdout as JSON: {}", e.getMessage());
+            return null;
+        }
     }
 
     // ─── Private: schema helpers ──────────────────────────────────────────────
 
-    /** Used by getExecutionSchema: requires both language=PYTHON AND .py extension. */
     private boolean isPythonPoc(Poc poc) {
         return poc.getLanguage() == Language.PYTHON
                 && poc.getOriginalFilename() != null
                 && poc.getOriginalFilename().toLowerCase().endsWith(".py");
     }
 
-    /** Used by execute: only requires .py extension (matches original behavior). */
     private boolean isPyFile(Poc poc) {
         return poc.getOriginalFilename() != null
                 && poc.getOriginalFilename().toLowerCase().endsWith(".py");
@@ -276,7 +404,6 @@ public class PocExecutionServiceImpl implements PocExecutionService {
         return "文件扩展名不是 .py";
     }
 
-    /** Builds v1-compat paramSchemaByMode from the action list. */
     private Map<String, List<ParamField>> buildCompatParamSchema(List<PocAction> actions) {
         List<ParamField> checkParams = actions.stream()
                 .filter(a -> "CHECK_VULN".equals(a.getKey()))
@@ -427,9 +554,31 @@ public class PocExecutionServiceImpl implements PocExecutionService {
             record.setStartedAt(resp.getStartedAt());
             record.setFinishedAt(resp.getFinishedAt());
             record.setDurationMs(resp.getDurationMs());
+            // Persist artifact metadata (objectKey preserved; URLs are runtime-derived)
+            if (resp.getArtifacts() != null && !resp.getArtifacts().isEmpty()) {
+                record.setArtifactSummary(serializeArtifacts(resp.getArtifacts()));
+            }
             return pocExecutionLogService.save(record).getId();
         } catch (Exception e) {
             log.warn("Failed to persist execution log for poc={}", pocId, e);
+            return null;
+        }
+    }
+
+    private String serializeArtifacts(List<ArtifactInfo> artifacts) {
+        try {
+            List<Map<String, Object>> summary = artifacts.stream().map(a -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("name", a.getName());
+                m.put("type", a.getType());
+                m.put("mimeType", a.getMimeType());
+                m.put("sizeBytes", a.getSizeBytes());
+                m.put("objectKey", a.getObjectKey());
+                return m;
+            }).toList();
+            return objectMapper.writeValueAsString(summary);
+        } catch (Exception e) {
+            log.warn("Failed to serialize artifact summary: {}", e.getMessage());
             return null;
         }
     }
@@ -449,6 +598,14 @@ public class PocExecutionServiceImpl implements PocExecutionService {
         if (params == null) return null;
         Object v = params.get(key);
         return v == null ? null : v.toString();
+    }
+
+    private List<String> buildDebugCmd(String filename, List<String> args) {
+        List<String> cmd = new ArrayList<>();
+        cmd.add("python");
+        cmd.add(filename);
+        cmd.addAll(args);
+        return cmd;
     }
 
     private Thread drainThread(InputStream is, byte[][] holder, int index, AtomicBoolean truncatedFlag) {

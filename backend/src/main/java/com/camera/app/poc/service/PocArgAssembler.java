@@ -9,21 +9,21 @@ import java.util.Map;
 /**
  * Single source of truth for structured-request → script argv mapping.
  *
- * v2 method: {@link #assembleForAction} — action key drives flag selection
- * v1 method: {@link #assemble}          — mode enum drives flag selection (kept for compat)
+ * v2 method: {@link #assembleForAction} — action key drives flag selection (preferred)
+ * v1 method: {@link #assemble}          — mode enum drives flag selection (compat only)
  *
- * Action key → flag table:
+ * Action key → CLI flag mapping (authoritative):
  *   CHECK_VULN      → --check
  *   EXEC_COMMAND    → --cmd <params.cmd>
- *   FETCH_SNAPSHOT  → --snapshot
+ *   FETCH_SNAPSHOT  → --snapshot [params.outputFile]
  *   LIST_USERS      → --users
- *   DOWNLOAD_CONFIG → --config
+ *   DOWNLOAD_CONFIG → --config [params.outputFile]
+ *   DUMP_CREDS      → --dump-creds
  *   (unknown key)   → --check  (safe fallback)
  *
- * Mode flag table (v1 compat):
- *   CHECK   → --check
- *   EXPLOIT → --cmd <params.cmd>  (service must validate cmd is present before calling)
- *   null    → (legacy; no mode flag appended)
+ * For FETCH_SNAPSHOT and DOWNLOAD_CONFIG the caller (PocExecutionServiceImpl) pre-fills
+ * params.outputFile with an auto-generated filename before calling this assembler,
+ * so the flag is always followed by a concrete filename.
  */
 public final class PocArgAssembler {
 
@@ -39,7 +39,8 @@ public final class PocArgAssembler {
      * @param urlMode     true  → inject as {@code -u <usedTarget>}
      *                    false → inject as positional bare IP
      * @param compatArgs  legacy argument list (appended last; null bytes filtered)
-     * @param params      structured params map; EXEC_COMMAND reads {@code params.cmd}
+     * @param params      structured params map; EXEC_COMMAND reads {@code params.cmd};
+     *                    FETCH_SNAPSHOT/DOWNLOAD_CONFIG read {@code params.outputFile}
      */
     public static List<String> assembleForAction(String actionKey,
                                                   String usedTarget,
@@ -53,18 +54,27 @@ public final class PocArgAssembler {
 
         // 2. Action-specific flags
         switch (actionKey != null ? actionKey : "CHECK_VULN") {
-            case "CHECK_VULN"      -> args.add("--check");
-            case "EXEC_COMMAND"    -> {
+            case "CHECK_VULN" -> args.add("--check");
+            case "EXEC_COMMAND" -> {
                 String cmd = extractString(params, "cmd");
                 if (cmd != null && !cmd.isBlank()) {
                     args.add("--cmd");
                     args.add(cmd);
                 }
             }
-            case "FETCH_SNAPSHOT"  -> args.add("--snapshot");
-            case "LIST_USERS"      -> args.add("--users");
-            case "DOWNLOAD_CONFIG" -> args.add("--config");
-            default                -> args.add("--check"); // unknown key → safe fallback
+            case "FETCH_SNAPSHOT" -> {
+                args.add("--snapshot");
+                String of = extractString(params, "outputFile");
+                if (of != null && !of.isBlank()) args.add(of);
+            }
+            case "LIST_USERS" -> args.add("--users");
+            case "DOWNLOAD_CONFIG" -> {
+                args.add("--config");
+                String of = extractString(params, "outputFile");
+                if (of != null && !of.isBlank()) args.add(of);
+            }
+            case "DUMP_CREDS" -> args.add("--dump-creds");
+            default -> args.add("--check"); // unknown key → safe fallback
         }
 
         // 3. Legacy / extra arguments (appended last)
