@@ -29,7 +29,7 @@ public class AssetServiceFingerprintController {
                     "每条记录包含端口号、应用层协议、HTTP 标题、Server 响应头、厂商线索等。" +
                     "不同端口的结果互相独立，不会互相覆盖。"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping
     public ApiResponse<List<ServiceFingerprintResponse>> listServiceFingerprints(
             @Parameter(description = "资产 ID") @PathVariable Long id) {
@@ -40,7 +40,7 @@ public class AssetServiceFingerprintController {
             summary = "查询单条端口/服务识别结果详情",
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。根据指纹记录 ID 查询详情。"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{fingerprintId}")
     public ApiResponse<ServiceFingerprintResponse> getServiceFingerprint(
             @Parameter(description = "资产 ID") @PathVariable Long id,

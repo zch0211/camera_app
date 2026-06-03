@@ -50,7 +50,7 @@ public class KgController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "权限不足（VIEWER 无权限）"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "资产 ID 不存在")
     })
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{id}/enrich")
     public ApiResponse<EnrichResponse> enrich(
             @Parameter(description = "MySQL 资产 ID") @PathVariable Long id) {
@@ -76,7 +76,7 @@ public class KgController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "权限不足"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "资产 ID 不存在")
     })
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{id}/vuln-hints")
     public ApiResponse<VulnHintsResponse> vulnHints(
             @Parameter(description = "MySQL 资产 ID") @PathVariable Long id) {
@@ -101,7 +101,7 @@ public class KgController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "权限不足"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "资产 ID 不存在")
     })
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{id}/graph")
     public ApiResponse<GraphResponse> graph(
             @Parameter(description = "MySQL 资产 ID") @PathVariable Long id) {

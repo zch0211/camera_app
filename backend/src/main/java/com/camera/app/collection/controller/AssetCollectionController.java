@@ -38,7 +38,7 @@ public class AssetCollectionController {
                     "请通过 GET /collection-tasks/{taskId} 轮询任务状态，或通过 GET /collection-tasks/{taskId}/results 查看原始结果。\n" +
                     "采集完成后自动写回 AssetTechnicalProfile 并生成 AssetEvidence 记录。"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<CollectionTaskResponse> createTask(
@@ -52,7 +52,7 @@ public class AssetCollectionController {
             summary = "查询资产的采集任务列表",
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。按创建时间降序分页返回"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping
     public ApiResponse<PageResult<CollectionTaskResponse>> listTasks(
             @Parameter(description = "资产 ID") @PathVariable Long id,
@@ -65,7 +65,7 @@ public class AssetCollectionController {
             summary = "查询采集任务详情",
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。返回任务状态、摘要、结果数量等信息"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{taskId}")
     public ApiResponse<CollectionTaskResponse> getTask(
             @Parameter(description = "资产 ID") @PathVariable Long id,
@@ -79,7 +79,7 @@ public class AssetCollectionController {
                     "返回该任务所有探测记录，包含每个端口的 PORT_SCAN 结果与 HTTP_TITLE 结果。" +
                     "parsedData 字段为 JSON 字符串，包含端口/协议/标题/Server 等结构化信息"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{taskId}/results")
     public ApiResponse<List<CollectionResultResponse>> getTaskResults(
             @Parameter(description = "资产 ID") @PathVariable Long id,

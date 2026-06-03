@@ -23,7 +23,7 @@ public class UserUpdateRequest {
     @Schema(description = "是否启用")
     private Boolean enabled;
 
-    @Schema(description = "角色列表，可选值: ROLE_ADMIN / ROLE_OPERATOR / ROLE_VIEWER。" +
+    @Schema(description = "角色列表。支持全名（ROLE_ADMIN / ROLE_OPERATOR / ROLE_VIEWER）或简写（ADMIN / OPERATOR / VIEWER / VISITOR）。" +
             "不传则保持原有角色不变；传空数组 [] 将返回 400 错误",
             example = "[\"ROLE_VIEWER\"]")
     private Set<String> roles;

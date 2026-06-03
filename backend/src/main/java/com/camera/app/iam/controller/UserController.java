@@ -30,7 +30,7 @@ public class UserController {
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。支持按 username/nickname 模糊搜索及启用状态过滤。" +
                     "响应 data 字段为分页对象，包含 content（列表）、totalElements、totalPages、page、size"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping
     public ApiResponse<PageResult<UserResponse>> listUsers(
             @Parameter(description = "关键词（模糊匹配 username / nickname）")
@@ -48,7 +48,7 @@ public class UserController {
             summary = "查询用户详情",
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{id}")
     public ApiResponse<UserResponse> getUser(
             @Parameter(description = "用户 ID") @PathVariable Long id) {
@@ -67,7 +67,7 @@ public class UserController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409",
                     description = "用户名已存在")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<UserResponse> createUser(
@@ -88,7 +88,7 @@ public class UserController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404",
                     description = "用户不存在")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @PutMapping("/{id}")
     public ApiResponse<UserResponse> updateUser(
             @Parameter(description = "用户 ID") @PathVariable Long id,
@@ -107,7 +107,7 @@ public class UserController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404",
                     description = "用户不存在")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteUser(
             @Parameter(description = "用户 ID") @PathVariable Long id) {

@@ -24,7 +24,7 @@ public class DashboardController {
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。返回用户数、资产数（含在线数）、"
                     + "POC 总数/启用数、近 24h 执行次数及系统健康状态"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/overview")
     public ApiResponse<DashboardOverviewResponse> overview() {
         return ApiResponse.ok(dashboardService.overview());

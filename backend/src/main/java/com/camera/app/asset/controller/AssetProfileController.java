@@ -30,7 +30,7 @@ public class AssetProfileController {
                     "missingFields（后端计算的缺失字段列表）、inferenceCandidates（候选推断结果，按置信度降序）、" +
                     "evidences（证据来源，按采集时间降序）、knowledgeEnhancement（知识图谱增强占位）"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping
     public ApiResponse<AssetProfileResponse> getProfile(
             @Parameter(description = "资产 ID") @PathVariable Long id) {
@@ -41,7 +41,7 @@ public class AssetProfileController {
             summary = "获取设备技术特征",
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。若尚未录入技术特征，返回全字段为 null 的空对象（不报 404）"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/technical-features")
     public ApiResponse<TechnicalProfileResponse> getTechnicalFeatures(
             @Parameter(description = "资产 ID") @PathVariable Long id) {
@@ -54,7 +54,7 @@ public class AssetProfileController {
                     "若技术特征记录不存在，第一次调用时自动创建。" +
                     "openPorts / protocols 建议传 JSON 字符串，如 [80,443] / [\"RTSP\",\"HTTP\"]"
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @PutMapping("/technical-features")
     public ApiResponse<TechnicalProfileResponse> updateTechnicalFeatures(
             @Parameter(description = "资产 ID") @PathVariable Long id,

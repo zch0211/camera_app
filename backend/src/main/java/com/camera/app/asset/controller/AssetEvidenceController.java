@@ -29,7 +29,7 @@ public class AssetEvidenceController {
             summary = "查询证据来源列表",
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。结果按采集时间降序排列"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping
     public ApiResponse<List<EvidenceResponse>> list(
             @Parameter(description = "资产 ID") @PathVariable Long id) {
@@ -41,7 +41,7 @@ public class AssetEvidenceController {
             description = "权限: ROLE_ADMIN。sourceType 可选值: MANUAL / SCAN / SNIFF / KG / MODEL / IMPORT，默认 MANUAL。" +
                     "collectedAt 不填则默认当前时间"
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<EvidenceResponse> create(
@@ -54,7 +54,7 @@ public class AssetEvidenceController {
             summary = "更新证据来源",
             description = "权限: ROLE_ADMIN。支持部分更新"
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @PutMapping("/{evidenceId}")
     public ApiResponse<EvidenceResponse> update(
             @Parameter(description = "资产 ID") @PathVariable Long id,
@@ -67,7 +67,7 @@ public class AssetEvidenceController {
             summary = "删除证据来源",
             description = "权限: ROLE_ADMIN"
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @DeleteMapping("/{evidenceId}")
     public ApiResponse<Void> delete(
             @Parameter(description = "资产 ID") @PathVariable Long id,

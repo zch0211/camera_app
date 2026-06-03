@@ -36,7 +36,7 @@ public class UserCreateRequest {
     private boolean enabled = true;
 
     @NotEmpty(message = "角色不能为空")
-    @Schema(description = "角色列表，可选值: ROLE_ADMIN / ROLE_OPERATOR / ROLE_VIEWER",
+    @Schema(description = "角色列表。支持全名（ROLE_ADMIN / ROLE_OPERATOR / ROLE_VIEWER）或简写（ADMIN / OPERATOR / VIEWER / VISITOR），系统内部统一存储为 ROLE_* 格式",
             example = "[\"ROLE_OPERATOR\"]")
     private Set<String> roles;
 }

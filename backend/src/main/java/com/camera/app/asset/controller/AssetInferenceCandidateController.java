@@ -29,7 +29,7 @@ public class AssetInferenceCandidateController {
             summary = "查询候选推断列表",
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。结果按置信度降序排列"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping
     public ApiResponse<List<InferenceCandidateResponse>> list(
             @Parameter(description = "资产 ID") @PathVariable Long id) {
@@ -41,7 +41,7 @@ public class AssetInferenceCandidateController {
             description = "权限: ROLE_ADMIN。sourceType 可选值: MANUAL / RULE / KG / MODEL，默认 MANUAL。" +
                     "confidence 范围 0~1，建议精确到小数点后 3 位"
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<InferenceCandidateResponse> create(
@@ -54,7 +54,7 @@ public class AssetInferenceCandidateController {
             summary = "更新候选推断",
             description = "权限: ROLE_ADMIN。支持部分更新，可单独修改 confirmed 字段来确认推断结果"
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @PutMapping("/{candidateId}")
     public ApiResponse<InferenceCandidateResponse> update(
             @Parameter(description = "资产 ID") @PathVariable Long id,
@@ -67,7 +67,7 @@ public class AssetInferenceCandidateController {
             summary = "删除候选推断",
             description = "权限: ROLE_ADMIN"
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @DeleteMapping("/{candidateId}")
     public ApiResponse<Void> delete(
             @Parameter(description = "资产 ID") @PathVariable Long id,

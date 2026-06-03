@@ -49,7 +49,7 @@ public class PocController {
             summary = "分页查询 POC 列表",
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。支持 keyword / severity / enabled / language / targetType 过滤"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping
     public ApiResponse<PageResult<PocListItemResponse>> listPocs(
             @Parameter(description = "关键词（模糊匹配 name / cveId / description）")
@@ -75,7 +75,7 @@ public class PocController {
             summary = "查询 POC 详情",
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{id}")
     public ApiResponse<PocResponse> getPoc(
             @Parameter(description = "POC ID") @PathVariable Long id) {
@@ -91,7 +91,7 @@ public class PocController {
                     content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE)
             )
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<PocResponse> uploadPoc(
@@ -131,7 +131,7 @@ public class PocController {
             summary = "下载 POC 文件",
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。响应 Content-Disposition: attachment，触发浏览器下载"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{id}/download")
     public ResponseEntity<Resource> downloadPoc(
             @Parameter(description = "POC ID") @PathVariable Long id) {
@@ -154,7 +154,7 @@ public class PocController {
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。返回文件文本内容（仅文本型文件）。不执行文件，只读取存储内容。"
                     + "最多返回 200 KB / 5000 行，超出则 truncated=true。不支持的类型返回 previewable=false。"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{id}/content")
     public ApiResponse<PocContentResponse> getPocContent(
             @Parameter(description = "POC ID") @PathVariable Long id) {
@@ -192,7 +192,7 @@ public class PocController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "返回执行模板"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "POC 不存在")
     })
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{id}/execution-schema")
     public ApiResponse<PocExecutionSchema> getExecutionSchema(
             @Parameter(description = "POC ID") @PathVariable Long id) {
@@ -240,7 +240,7 @@ public class PocController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "参数校验失败"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "POC 或资产不存在")
     })
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @PostMapping("/{id}/execute")
     public ApiResponse<PocExecuteResponse> executePoc(
             @Parameter(description = "POC ID") @PathVariable Long id,
@@ -256,7 +256,7 @@ public class PocController {
             summary = "修改 POC 元数据",
             description = "权限: ROLE_ADMIN。只修改元数据，不替换文件本体。所有字段均为可选，仅传入需修改的字段"
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @PutMapping("/{id}")
     public ApiResponse<PocResponse> updatePoc(
             @Parameter(description = "POC ID") @PathVariable Long id,
@@ -270,7 +270,7 @@ public class PocController {
             summary = "删除/下架 POC",
             description = "权限: ROLE_ADMIN。逻辑删除：status → DELETED，enabled → false，同步删除 MinIO 文件"
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deletePoc(
             @Parameter(description = "POC ID") @PathVariable Long id) {

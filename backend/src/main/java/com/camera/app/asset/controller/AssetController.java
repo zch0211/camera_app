@@ -33,7 +33,7 @@ public class AssetController {
                     "online / type 为精确匹配。" +
                     "响应 data 字段为分页对象，包含 content（列表）、totalElements、totalPages、page、size"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping
     public ApiResponse<PageResult<AssetResponse>> listAssets(
             @Parameter(description = "关键词，模糊匹配 name / ip，忽略大小写")
@@ -57,7 +57,7 @@ public class AssetController {
             summary = "查询资产详情",
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{id}")
     public ApiResponse<AssetResponse> getAsset(
             @Parameter(description = "资产 ID") @PathVariable Long id) {
@@ -76,7 +76,7 @@ public class AssetController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409",
                     description = "IP 已存在")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<AssetResponse> createAsset(
@@ -98,7 +98,7 @@ public class AssetController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409",
                     description = "IP 已被其他资产占用")
     })
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @PutMapping("/{id}")
     public ApiResponse<AssetResponse> updateAsset(
             @Parameter(description = "资产 ID") @PathVariable Long id,
@@ -110,7 +110,7 @@ public class AssetController {
             summary = "删除资产",
             description = "权限: ROLE_ADMIN。物理删除"
     )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteAsset(
             @Parameter(description = "资产 ID") @PathVariable Long id) {

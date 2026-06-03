@@ -34,7 +34,7 @@ public class PocExecutionController {
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。支持 pocId / assetId / success 过滤，按 createdAt 降序排列。"
                     + "列表不含 stdout/stderr，详情接口才包含完整输出。hasArtifacts=true 表示该次执行产生了文件附件"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping
     public ApiResponse<PageResult<PocExecutionLogSummary>> list(
             @Parameter(description = "过滤指定 POC ID") @RequestParam(required = false) Long pocId,
@@ -49,7 +49,7 @@ public class PocExecutionController {
             summary = "查询执行记录详情",
             description = "权限: ROLE_ADMIN / ROLE_OPERATOR。包含 stdout / stderr 完整内容及 artifactSummary（JSON 格式的附件元数据）"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{id}")
     public ApiResponse<PocExecutionLogResponse> getById(
             @Parameter(description = "执行记录 ID") @PathVariable Long id) {
@@ -63,7 +63,7 @@ public class PocExecutionController {
                     + "支持 ?token=<jwt> 查询参数，用于浏览器图片标签等无法设置 Authorization 头的场景。"
                     + "IMAGE 类型返回 image/jpeg 等原始 Content-Type；FILE 类型同样 inline 返回。"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{id}/artifacts/{name:.+}/preview")
     public void previewArtifact(
             @Parameter(description = "执行记录 ID") @PathVariable Long id,
@@ -97,7 +97,7 @@ public class PocExecutionController {
                     + "支持 ?token=<jwt> 查询参数，用于直接链接跳转下载等无法设置 Authorization 头的场景。"
                     + "附件名称从执行结果的 artifacts[*].name 获取，或通过执行记录详情的 artifactSummary 解析"
     )
-    @PreAuthorize("hasAnyRole('ADMIN', 'OPERATOR')")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'OPERATOR')")
     @GetMapping("/{id}/artifacts/{name:.+}/download")
     public void downloadArtifact(
             @Parameter(description = "执行记录 ID") @PathVariable Long id,
