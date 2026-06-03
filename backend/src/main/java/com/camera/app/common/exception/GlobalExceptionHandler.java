@@ -31,7 +31,11 @@ public class GlobalExceptionHandler {
             String allowed = Arrays.stream(ife.getTargetType().getEnumConstants())
                     .map(Object::toString)
                     .collect(Collectors.joining(" / "));
-            return ApiResponse.error(400, "无效的枚举值: \"" + ife.getValue() + "\"，可选值: " + allowed);
+            // Include field name from Jackson path so frontend can pinpoint the bad field
+            String fieldName = (ife.getPath() != null && !ife.getPath().isEmpty())
+                    ? ife.getPath().get(0).getFieldName() : "字段";
+            return ApiResponse.error(400,
+                    "字段 [" + fieldName + "] 值无效: \"" + ife.getValue() + "\"，可选值: " + allowed);
         }
         return ApiResponse.error(400, "请求体格式错误");
     }
