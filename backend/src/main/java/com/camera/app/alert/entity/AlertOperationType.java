@@ -6,5 +6,7 @@ public enum AlertOperationType {
     MARK_FALSE_POSITIVE,
     RESOLVE,
     IGNORE,
-    COMMENT
+    COMMENT,
+    /** Automatic re-trigger: existing active alert aggregated, triggerCount++ */
+    RETRIGGER
 }

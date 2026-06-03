@@ -5,9 +5,14 @@ import com.camera.app.poc.dto.PocExecutionLogResponse;
 import com.camera.app.poc.dto.PocExecutionLogSummary;
 import com.camera.app.poc.entity.PocExecutionLog;
 
+import java.util.Optional;
+
 public interface PocExecutionLogService {
 
     PocExecutionLog save(PocExecutionLog log);
+
+    /** Lightweight raw-entity lookup used by alert detail to enrich relatedExecutions. */
+    Optional<PocExecutionLog> findLogById(Long id);
 
     PageResult<PocExecutionLogSummary> list(Long pocId, Long assetId, Boolean success, int page, int size);
 

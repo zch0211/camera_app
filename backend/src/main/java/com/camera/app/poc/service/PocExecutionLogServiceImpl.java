@@ -42,6 +42,12 @@ public class PocExecutionLogServiceImpl implements PocExecutionLogService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public java.util.Optional<PocExecutionLog> findLogById(Long id) {
+        return repository.findById(id);
+    }
+
+    @Override
     public PageResult<PocExecutionLogSummary> list(Long pocId, Long assetId, Boolean success, int page, int size) {
         Specification<PocExecutionLog> spec = buildSpec(pocId, assetId, success);
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));

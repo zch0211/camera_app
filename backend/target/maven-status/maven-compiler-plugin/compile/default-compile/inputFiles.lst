@@ -87,6 +87,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocService.j
 D:\code\camera_app\backend\src\main\java\com\camera\app\alert\entity\AlertOperation.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\risk\controller\RiskController.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\plugin\impl\RtspProbePlugin.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\risk\dto\SourceDistributionEntry.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\alert\entity\Alert.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\entity\InferenceCandidateSourceType.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\entity\AssetEvidence.java
@@ -97,6 +98,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\collection\plugin\impl\W
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\plugin\impl\PortProbePlugin.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\plugin\impl\UpnpProbePlugin.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\TechnicalProfileResponse.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\alert\service\AlertGenerationService.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\controller\AssetInferenceCandidateController.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\AssetCreateRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\dto\AssetProfileResponse.java
@@ -137,6 +139,7 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\asset\entity\AssetType.j
 D:\code\camera_app\backend\src\main\java\com\camera\app\alert\dto\AlertActionRequest.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\discovery\service\DiscoveryServiceImpl.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocExecutionLogServiceImpl.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\alert\dto\LinkedResourcesResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\security\JwtAuthenticationFilter.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\common\exception\BusinessException.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\repository\UserRepository.java
@@ -196,10 +199,12 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\PocUpdateRequest
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\repository\AssetServiceFingerprintRepository.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\dto\ParamField.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\dashboard\DashboardOverviewResponse.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\risk\dto\RiskOverviewResponse.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\discovery\engine\DeviceTypeClassifier.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\poc\service\PocArgAssembler.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\common\exception\GlobalExceptionHandler.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\collection\entity\TriggerType.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\alert\dto\RelatedExecutionEntry.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\service\AssetProfileServiceImpl.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\kg\dto\GraphNode.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\iam\dto\UserUpdateRequest.java
@@ -211,3 +216,4 @@ D:\code\camera_app\backend\src\main\java\com\camera\app\alert\entity\AlertStatus
 D:\code\camera_app\backend\src\main\java\com\camera\app\discovery\service\DiscoveryTaskStatusService.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\entity\AssetInferenceCandidate.java
 D:\code\camera_app\backend\src\main\java\com\camera\app\asset\repository\AssetRepository.java
+D:\code\camera_app\backend\src\main\java\com\camera\app\risk\dto\AlertTrendEntry.java

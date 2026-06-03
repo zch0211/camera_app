@@ -46,13 +46,22 @@ public class AlertDetailResponse {
     @Schema(description = "true 表示该告警曾关联某资产但该资产已被删除（当前展示为快照数据）")
     private final boolean assetDeleted;
 
+    // ── 关联资源跳转引用 ───────────────────────────
+    @Schema(description = "关联资源引用，供前端跳转到资产/采集任务/发现结果/POC 执行记录详情页")
+    private final LinkedResourcesResponse linkedResources;
+
+    // ── POC 执行记录回链 ────────────────────────────
+    @Schema(description = "触发本告警的 POC 执行记录列表，按触发时间倒序；可用 executionId 跳转到 /api/v1/poc-executions/{id}")
+    private final List<RelatedExecutionEntry> relatedExecutions;
+
     // ── 证据与时间线 ────────────────────────────────
     private final List<AlertEvidenceResponse> evidences;
     private final List<AlertOperationResponse> operations;
 
     public AlertDetailResponse(Alert alert, Asset asset,
                                List<AlertEvidence> evidences,
-                               List<AlertOperation> operations) {
+                               List<AlertOperation> operations,
+                               List<RelatedExecutionEntry> relatedExecutions) {
         this.id               = alert.getId();
         this.title            = alert.getTitle();
         this.sourceType       = alert.getSourceType();
@@ -81,6 +90,8 @@ public class AlertDetailResponse {
 
         this.assetDeleted = alert.getAssetId() == null && alert.getAssetNameSnapshot() != null;
 
+        this.linkedResources   = new LinkedResourcesResponse(alert, asset, evidences);
+        this.relatedExecutions = relatedExecutions;
         this.evidences  = evidences.stream().map(AlertEvidenceResponse::new).toList();
         this.operations = operations.stream().map(AlertOperationResponse::new).toList();
     }

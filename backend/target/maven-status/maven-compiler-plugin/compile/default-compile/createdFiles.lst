@@ -29,12 +29,14 @@ com\camera\app\asset\dto\TechnicalProfileResponse.class
 com\camera\app\asset\entity\Asset.class
 com\camera\app\common\exception\BusinessException.class
 com\camera\app\discovery\entity\DiscoveryPreset$1.class
+com\camera\app\alert\service\AlertGenerationService$Input.class
 com\camera\app\iam\repository\RoleRepository.class
 com\camera\app\alert\entity\AlertEvidence.class
 com\camera\app\collection\probe\LightweightProbeService$PortResult.class
 com\camera\app\kg\dto\EnrichResponse.class
 com\camera\app\poc\service\PocArgAssembler.class
 com\camera\app\alert\dto\AlertDetailResponse.class
+com\camera\app\risk\dto\RiskOverviewResponse$RiskOverviewResponseBuilder.class
 com\camera\app\asset\entity\AssetServiceFingerprint.class
 com\camera\app\kg\service\CameraKgService.class
 com\camera\app\asset\dto\InferenceCandidateRequest.class
@@ -51,6 +53,7 @@ com\camera\app\asset\repository\AssetRepository.class
 com\camera\app\asset\service\AssetProfileService.class
 com\camera\app\discovery\entity\DiscoveryLevel.class
 com\camera\app\poc\service\PocDownloadResult.class
+com\camera\app\risk\dto\RiskOverviewResponse.class
 com\camera\app\collection\rules\impl\RouterRule.class
 com\camera\app\asset\entity\EvidenceSourceType.class
 com\camera\app\kg\dto\VulnHintsResponse.class
@@ -118,6 +121,7 @@ com\camera\app\poc\entity\ActionCategory.class
 com\camera\app\poc\dto\ArtifactInfo$ArtifactInfoBuilder.class
 com\camera\app\asset\dto\InferenceCandidateResponse.class
 com\camera\app\poc\controller\PocController.class
+com\camera\app\alert\dto\LinkedResourcesResponse.class
 com\camera\app\collection\plugin\ProbeWritebackService.class
 com\camera\app\poc\entity\TargetType.class
 com\camera\app\poc\dto\PocExecuteResponse.class
@@ -138,6 +142,7 @@ com\camera\app\poc\dto\PocUpdateRequest.class
 com\camera\app\asset\util\TechnicalProfileConverter.class
 com\camera\app\poc\dto\PocExecutionLogResponse.class
 com\camera\app\discovery\repository\DiscoveryTaskRepository.class
+com\camera\app\risk\dto\AlertTrendEntry.class
 com\camera\app\discovery\service\DiscoveryResultPersistService.class
 com\camera\app\alert\controller\AlertController.class
 com\camera\app\iam\service\UserDetailsServiceImpl.class
@@ -165,6 +170,7 @@ com\camera\app\poc\entity\TargetStrategy.class
 com\camera\app\poc\dto\PocContentResponse.class
 com\camera\app\asset\dto\TechnicalProfileUpdateRequest.class
 com\camera\app\poc\repository\PocRepository.class
+com\camera\app\risk\dto\SourceDistributionEntry.class
 com\camera\app\collection\rules\RuleContext$RuleContextBuilder.class
 com\camera\app\asset\controller\AssetProfileController.class
 com\camera\app\kg\dto\GraphNode.class
@@ -185,6 +191,7 @@ com\camera\app\poc\dto\ParamField$ParamFieldBuilder.class
 com\camera\app\asset\dto\ProtocolCapabilityResponse.class
 com\camera\app\iam\dto\UserResponse.class
 com\camera\app\dashboard\DashboardController.class
+com\camera\app\alert\service\AlertGenerationService.class
 com\camera\app\collection\service\AssetCollectionServiceImpl$1.class
 com\camera\app\asset\service\AssetServiceImpl.class
 com\camera\app\CameraAppApplication.class
@@ -217,7 +224,9 @@ com\camera\app\poc\service\PocExecutionLogServiceImpl.class
 com\camera\app\alert\entity\AlertStatus.class
 com\camera\app\alert\dto\AlertListItemResponse.class
 com\camera\app\risk\dto\HighRiskAssetResponse.class
+com\camera\app\alert\service\AlertGenerationService$Input$InputBuilder.class
 com\camera\app\asset\dto\AssetProfileResponse.class
+com\camera\app\alert\dto\LinkedResourcesResponse$EvidenceRef.class
 com\camera\app\collection\rules\DeviceTypeRuleEngine.class
 com\camera\app\alert\dto\AlertOperationResponse.class
 com\camera\app\poc\dto\PocResponse.class
@@ -233,6 +242,7 @@ com\camera\app\asset\dto\AssetResponse.class
 com\camera\app\iam\controller\UserController.class
 com\camera\app\poc\entity\PocStatus.class
 com\camera\app\security\JwtAuthenticationFilter.class
+com\camera\app\alert\dto\RelatedExecutionEntry.class
 com\camera\app\discovery\engine\ActiveScanEngine.class
 com\camera\app\poc\service\PocExecutionLogServiceImpl$2.class
 com\camera\app\poc\controller\PocExecutionController.class

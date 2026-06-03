@@ -1,5 +1,6 @@
 package com.camera.app.collection.service;
 
+import com.camera.app.alert.service.AlertGenerationService;
 import com.camera.app.collection.entity.ProbeType;
 import com.camera.app.collection.entity.TaskPreset;
 import com.camera.app.collection.plugin.*;
@@ -31,6 +32,7 @@ public class CollectionTaskExecutor {
     private final ProbeWritebackService writebackService;
     private final DeviceTypeRuleEngine ruleEngine;
     private final CollectionTaskStatusService statusService;
+    private final AlertGenerationService alertGenerationService;
 
     @Async("probeTaskPool")
     public void executeAsync(Long assetId, Long taskId, String targetIp,
@@ -73,6 +75,12 @@ public class CollectionTaskExecutor {
             String summary = buildSummary(allResults, detections, plugins);
             statusService.markSuccess(taskId, summary, firstPluginError);
             log.info("采集任务完成 taskId={} results={}", taskId, allResults.size());
+            // Auto-generate alert from collection results (non-blocking)
+            try {
+                alertGenerationService.generateFromCollectionTask(assetId, taskId, allResults);
+            } catch (Exception e) {
+                log.warn("[AlertGen] Collection alert generation failed taskId={}: {}", taskId, e.getMessage());
+            }
         } catch (Exception e) {
             log.error("采集任务写回失败 taskId={}: {}", taskId, e.getMessage(), e);
             statusService.markFailed(taskId, e.getMessage());

@@ -1,5 +1,6 @@
 package com.camera.app.discovery.service;
 
+import com.camera.app.alert.service.AlertGenerationService;
 import com.camera.app.asset.repository.AssetRepository;
 import com.camera.app.discovery.engine.DeviceTypeClassifier;
 import com.camera.app.discovery.engine.ScanHostResult;
@@ -33,6 +34,7 @@ public class DiscoveryResultPersistService {
     private final DiscoveryResultRepository resultRepository;
     private final AssetRepository assetRepository;
     private final ObjectMapper objectMapper;
+    private final AlertGenerationService alertGenerationService;
 
     /**
      * Persist a single scan result immediately — called per alive host as it
@@ -74,6 +76,13 @@ public class DiscoveryResultPersistService {
         linkToAsset(dr);
         resultRepository.save(dr);
         log.debug("发现结果已写入 ip={} ports={} type={} level={}", raw.ip(), openPorts, cls.deviceType(), level);
+
+        // Auto-generate alert for unmanaged candidate devices (non-blocking)
+        try {
+            alertGenerationService.generateFromDiscoveryResult(taskId, dr);
+        } catch (Exception e) {
+            log.warn("[AlertGen] Discovery alert generation failed ip={}: {}", raw.ip(), e.getMessage());
+        }
         return level;
     }
 

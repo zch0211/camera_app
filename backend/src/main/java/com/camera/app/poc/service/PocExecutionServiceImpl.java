@@ -1,5 +1,6 @@
 package com.camera.app.poc.service;
 
+import com.camera.app.alert.service.AlertGenerationService;
 import com.camera.app.asset.repository.AssetRepository;
 import com.camera.app.common.exception.BusinessException;
 import com.camera.app.poc.dto.ArtifactInfo;
@@ -43,6 +44,7 @@ public class PocExecutionServiceImpl implements PocExecutionService {
     private final PocExecutionLogService pocExecutionLogService;
     private final PocActionSchemaBuilder actionSchemaBuilder;
     private final ObjectMapper objectMapper;
+    private final AlertGenerationService alertGenerationService;
 
     private record ExecCtx(List<String> args, TargetStrategy targetStrategy,
                            Integer finalPort, String usedTarget) {}
@@ -196,6 +198,15 @@ public class PocExecutionServiceImpl implements PocExecutionService {
         }
 
         Long executionId = saveExecutionLog(pocId, request.getAssetId(), executedBy, response);
+
+        // Auto-generate alert if execution succeeded (non-blocking — failures are swallowed)
+        try {
+            alertGenerationService.generateFromPocExecution(
+                    pocId, request.getAssetId(), actionKey,
+                    Boolean.TRUE.equals(response.getSuccess()), executionId);
+        } catch (Exception e) {
+            log.warn("[AlertGen] POC alert generation failed pocId={} action={}: {}", pocId, actionKey, e.getMessage());
+        }
 
         // Enrich artifact URLs with executionId (known only after log is saved)
         if (executionId != null && !artifacts.isEmpty()) {

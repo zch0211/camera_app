@@ -1,5 +1,6 @@
 package com.camera.app.asset.service;
 
+import com.camera.app.alert.service.AlertGenerationService;
 import com.camera.app.asset.dto.*;
 import com.camera.app.asset.entity.AssetEvidence;
 import com.camera.app.asset.entity.AssetInferenceCandidate;
@@ -54,6 +55,7 @@ public class AssetProfileServiceImpl implements AssetProfileService {
     private final AssetServiceFingerprintRepository fingerprintRepository;
     private final AssetCollectionResultRepository collectionResultRepository;
     private final ObjectMapper objectMapper;
+    private final AlertGenerationService alertGenerationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -154,7 +156,15 @@ public class AssetProfileServiceImpl implements AssetProfileService {
         var candidate = new AssetInferenceCandidate();
         candidate.setAssetId(assetId);
         applyCandidate(candidate, request);
-        return new InferenceCandidateResponse(candidateRepository.save(candidate));
+        var saved = candidateRepository.save(candidate);
+        try {
+            alertGenerationService.generateFromInference(
+                    assetId, saved.getId(), saved.getFieldName(),
+                    saved.getCandidateValue(), saved.getConfidence());
+        } catch (Exception e) {
+            log.warn("[AlertGen] Inference alert failed assetId={}: {}", assetId, e.getMessage());
+        }
+        return new InferenceCandidateResponse(saved);
     }
 
     @Override
@@ -162,7 +172,15 @@ public class AssetProfileServiceImpl implements AssetProfileService {
         var candidate = candidateRepository.findByIdAndAssetId(candidateId, assetId)
                 .orElseThrow(() -> new BusinessException(404, "候选推断不存在，id=" + candidateId));
         applyCandidate(candidate, request);
-        return new InferenceCandidateResponse(candidateRepository.save(candidate));
+        var saved = candidateRepository.save(candidate);
+        try {
+            alertGenerationService.generateFromInference(
+                    assetId, saved.getId(), saved.getFieldName(),
+                    saved.getCandidateValue(), saved.getConfidence());
+        } catch (Exception e) {
+            log.warn("[AlertGen] Inference alert failed assetId={}: {}", assetId, e.getMessage());
+        }
+        return new InferenceCandidateResponse(saved);
     }
 
     @Override

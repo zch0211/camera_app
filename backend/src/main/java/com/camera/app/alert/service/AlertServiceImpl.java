@@ -9,8 +9,10 @@ import com.camera.app.asset.entity.Asset;
 import com.camera.app.asset.repository.AssetRepository;
 import com.camera.app.common.exception.BusinessException;
 import com.camera.app.common.response.PageResult;
+import com.camera.app.poc.service.PocExecutionLogService;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -34,6 +37,7 @@ public class AlertServiceImpl implements AlertService {
     private final AlertOperationRepository   alertOperationRepository;
     private final AssetRepository            assetRepository;
     private final AlertRiskScoreService      riskScoreService;
+    private final PocExecutionLogService     pocExecutionLogService;
 
     // ─── public API ───────────────────────────────────────────────────────────
 
@@ -172,7 +176,25 @@ public class AlertServiceImpl implements AlertService {
                 ? assetRepository.findById(alert.getAssetId()).orElse(null) : null;
         List<AlertEvidence>  evidences  = alertEvidenceRepository.findByAlertIdOrderByCreatedAtAsc(alert.getId());
         List<AlertOperation> operations = alertOperationRepository.findByAlertIdOrderByCreatedAtAsc(alert.getId());
-        return new AlertDetailResponse(alert, asset, evidences, operations);
+
+        // Build related-executions from POC_EXECUTION evidences, newest first
+        List<RelatedExecutionEntry> relatedExecutions = evidences.stream()
+                .filter(e -> AlertEvidenceType.POC_EXECUTION.equals(e.getEvidenceType())
+                        && e.getRefId() != null)
+                .sorted(Comparator.comparing(AlertEvidence::getCreatedAt, Comparator.reverseOrder()))
+                .map(e -> {
+                    try {
+                        return pocExecutionLogService.findLogById(e.getRefId())
+                                .map(logEntity -> new RelatedExecutionEntry(logEntity, e.getCreatedAt(), e.getDescription()))
+                                .orElseGet(() -> new RelatedExecutionEntry(e.getRefId(), e.getCreatedAt(), e.getDescription()));
+                    } catch (Exception ex) {
+                        log.warn("[AlertDetail] Failed to load execution log id={}: {}", e.getRefId(), ex.getMessage());
+                        return new RelatedExecutionEntry(e.getRefId(), e.getCreatedAt(), e.getDescription());
+                    }
+                })
+                .toList();
+
+        return new AlertDetailResponse(alert, asset, evidences, operations, relatedExecutions);
     }
 
     private Specification<Alert> buildSpec(String keyword, AlertSeverity severity,

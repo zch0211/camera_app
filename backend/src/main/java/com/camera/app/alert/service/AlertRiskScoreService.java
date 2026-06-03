@@ -6,8 +6,13 @@ import com.camera.app.alert.entity.AlertStatus;
 import com.camera.app.alert.repository.AlertRepository;
 import com.camera.app.asset.entity.Asset;
 import com.camera.app.asset.repository.AssetRepository;
+import com.camera.app.alert.entity.AlertSeverity;
+import com.camera.app.alert.entity.AlertStatus;
 import com.camera.app.common.response.PageResult;
+import com.camera.app.risk.dto.AlertTrendEntry;
 import com.camera.app.risk.dto.HighRiskAssetResponse;
+import com.camera.app.risk.dto.RiskOverviewResponse;
+import com.camera.app.risk.dto.SourceDistributionEntry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,6 +36,56 @@ public class AlertRiskScoreService {
 
     private final AlertRepository alertRepository;
     private final AssetRepository assetRepository;
+
+    // ═══════════════════════════════════════════════════════════════
+    // Risk Overview — statistics for the dashboard
+    // ═══════════════════════════════════════════════════════════════
+
+    @Transactional(readOnly = true)
+    public RiskOverviewResponse getOverview() {
+        List<AlertStatus> activeStatuses = ACTIVE;
+        long total        = alertRepository.count();
+        long open         = alertRepository.countByStatus(AlertStatus.NEW)
+                          + alertRepository.countByStatus(AlertStatus.CONFIRMED);
+        long critical     = alertRepository.countBySeverityAndStatusIn(AlertSeverity.CRITICAL, activeStatuses);
+        long high         = alertRepository.countBySeverityAndStatusIn(AlertSeverity.HIGH, activeStatuses);
+        long medium       = alertRepository.countBySeverityAndStatusIn(AlertSeverity.MEDIUM, activeStatuses);
+        long low          = alertRepository.countBySeverityAndStatusIn(AlertSeverity.LOW, activeStatuses);
+        long confirmed    = alertRepository.countByStatus(AlertStatus.CONFIRMED);
+        long fp           = alertRepository.countByStatus(AlertStatus.FALSE_POSITIVE);
+        long resolved     = alertRepository.countByStatus(AlertStatus.RESOLVED);
+        long ignored      = alertRepository.countByStatus(AlertStatus.IGNORED);
+        long riskAssets   = assetRepository.countByRiskScoreGreaterThanEqual(1);
+        return RiskOverviewResponse.builder()
+                .totalAlerts(total).openAlerts(open)
+                .criticalAlerts(critical).highAlerts(high).mediumAlerts(medium).lowAlerts(low)
+                .confirmedAlerts(confirmed).falsePositiveAlerts(fp)
+                .resolvedAlerts(resolved).ignoredAlerts(ignored)
+                .highRiskAssets(riskAssets)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AlertTrendEntry> getAlertTrends(int days) {
+        LocalDateTime since = LocalDateTime.now().minusDays(days);
+        List<Object[]> rows = alertRepository.dailyTrends(since);
+        return rows.stream().map(row -> new AlertTrendEntry(
+                row[0].toString(),
+                ((Number) row[1]).longValue(),
+                ((Number) row[2]).longValue()
+        )).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SourceDistributionEntry> getSourceDistribution() {
+        List<Object[]> rows = alertRepository.countGroupBySourceType();
+        return rows.stream().map(row -> new SourceDistributionEntry(
+                (com.camera.app.alert.entity.AlertSourceType) row[0],
+                ((Number) row[1]).longValue()
+        )).toList();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
 
     /**
      * Recalculate and persist the riskScore for a single asset.
